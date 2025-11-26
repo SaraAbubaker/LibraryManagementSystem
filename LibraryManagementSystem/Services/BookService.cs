@@ -29,7 +29,7 @@ namespace LibraryManagementSystem.Services
             return book;
         }
 
-        public Book? Update(UpdateBookDto dto, int currentUserId)
+        public Book? UpdateBook(UpdateBookDto dto, int currentUserId)
         {
             var book = Store.Books.FirstOrDefault(b => b.Id == dto.Id);
             if (book == null)
@@ -48,7 +48,7 @@ namespace LibraryManagementSystem.Services
             return book;
         }
 
-        public List<BookListDto> GetAll()
+        public List<BookListDto> GetBookDetails()
         {
             return Store.Books.Select(book =>
             {
