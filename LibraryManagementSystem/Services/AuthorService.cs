@@ -102,7 +102,7 @@ namespace LibraryManagementSystem.Services
             return result;
         }
 
-
+        //To-do: make all books with this author have unkown author
         public bool DeleteAuthor(int id)
         {
             var author = Authors.FirstOrDefault(a => a.Id == id);
