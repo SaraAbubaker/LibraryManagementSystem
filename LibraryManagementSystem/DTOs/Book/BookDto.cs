@@ -4,7 +4,7 @@ using System.Text;
 
 namespace LibraryManagementSystem.DTOs.Book
 {
-    public class BookDetailsDto
+    public class BookDto
     {
         public int Id { get; set; }
 

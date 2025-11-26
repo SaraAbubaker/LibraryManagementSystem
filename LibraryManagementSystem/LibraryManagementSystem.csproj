@@ -9,11 +9,14 @@
 
   <ItemGroup>
     <Folder Include="Controllers\" />
-    <Folder Include="DTOs\Author\" />
     <Folder Include="DTOs\Category\" />
     <Folder Include="DTOs\InventoryRecord\" />
     <Folder Include="DTOs\BorrowRecord\" />
     <Folder Include="DTOs\User\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mapster" Version="7.4.0" />
   </ItemGroup>
 
 </Project>

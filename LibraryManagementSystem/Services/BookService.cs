@@ -12,25 +12,31 @@ namespace LibraryManagementSystem.Services
 
 
         //Mapping
-        public BookDetailsDto MapToBookDetailsDto(BookDetailsDto dto)
+        public BookDto MapToBookDto(BookDto dto)
         {
-            return new BookDetailsDto
+            return new BookDto
             {
                 Id = dto.Id,
                 Title = dto.Title,
                 PublishDate = dto.PublishDate,
                 Version = dto.Version,
                 Publisher = dto.Publisher,
+
                 AuthorId = dto.AuthorId,
                 AuthorName = dto.AuthorName,
                 CategoryId = dto.CategoryId,
                 CategoryName = dto.CategoryName,
                 TotalCopies = dto.TotalCopies,
-                AvailableCopies = dto.AvailableCopies
+                AvailableCopies = dto.AvailableCopies,
+
+                CreatedByUserId = dto.CreatedByUserId,
+                CreatedDate = dto.CreatedDate,
+                LastModifiedByUserId = dto.LastModifiedByUserId,
+                LastModifiedDate = dto.LastModifiedDate
             };
         }
 
-        public BookListDto MapToBookList(BookListDto dto)
+        public BookListDto MapToBookListDto(BookListDto dto)
         {
             return new BookListDto
             {
@@ -39,9 +45,11 @@ namespace LibraryManagementSystem.Services
                 PublishDate = dto.PublishDate,
                 Version = dto.Version,
                 Publisher = dto.Publisher,
+
                 AuthorName = dto.AuthorName,
                 CategoryName = dto.CategoryName,
                 IsAvailable = dto.IsAvailable,
+
                 CreatedByUserId = dto.CreatedByUserId,
                 CreatedDate = dto.CreatedDate,
                 LastModifiedByUserId = dto.LastModifiedByUserId,
@@ -49,38 +57,42 @@ namespace LibraryManagementSystem.Services
             };
         }
 
-        public Book MapToCreateBook(CreateBookDto dto)
+        public Book MapToCreateBookDto(CreateBookDto dto)
         {
             return new Book
             {
                 Title = dto.Title,
                 PublishDate = dto.PublishDate,
                 Version = dto.Version,
+                Publisher = dto.Publisher,
+
                 AuthorId = dto.AuthorId,
-                CategoryId = dto.CategoryId,
-                Publisher = dto.Publisher
+                CategoryId = dto.CategoryId
             };
         }
 
-        public SearchBookParamsDto MapToSearchBookParams(SearchBookParamsDto dto)
+        public SearchBookParamsDto MapToSearchBookParamsDto(SearchBookParamsDto dto)
         {
             return new SearchBookParamsDto
             {
                 Page = dto.Page,
                 PageSize = dto.PageSize,
+
                 SortBy = dto.SortBy,
                 SortDir = dto.SortDir,
+
                 Title = dto.Title,
                 PublishDate = dto.PublishDate,
                 Version = dto.Version,
+                Publisher = dto.Publisher,
+
                 AuthorId = dto.AuthorId,
                 CategoryId = dto.CategoryId,
-                Publisher = dto.Publisher,
                 IsAvailable = dto.IsAvailable
             };
         }
 
-        public UpdateBookDto MapToUpdateBook(UpdateBookDto dto)
+        public UpdateBookDto MapToUpdateBookDto(UpdateBookDto dto)
         {
             return new UpdateBookDto 
             { 
@@ -89,6 +101,7 @@ namespace LibraryManagementSystem.Services
                 PublishDate = dto.PublishDate,
                 Version = dto.Version,
                 Publisher = dto.Publisher,
+
                 AuthorId = dto.AuthorId,
                 CategoryId = dto.CategoryId
             };
