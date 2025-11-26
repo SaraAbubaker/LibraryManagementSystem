@@ -1,0 +1,22 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace LibraryManagementSystem.DTOs.User
+{
+    public class UserDto
+    {
+        public int Id { get; set; }
+
+        public string Username { get; set; } = null!;
+        public string Email { get; set; } = null!;
+
+        public int BorrowedBooksCount { get; set; }
+
+        
+        public string? CreatedByUserId { get; set; }
+        public DateTime? CreatedDate { get; set; }
+        public string? LastModifiedByUserId { get; set; }
+        public DateTime? LastModifiedDate { get; set; }
+    }
+}
