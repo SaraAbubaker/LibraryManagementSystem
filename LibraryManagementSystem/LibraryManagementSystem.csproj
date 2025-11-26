@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <Folder Include="Controllers\" />
-    <Folder Include="DTOs\Category\" />
     <Folder Include="DTOs\InventoryRecord\" />
     <Folder Include="DTOs\BorrowRecord\" />
     <Folder Include="DTOs\User\" />
