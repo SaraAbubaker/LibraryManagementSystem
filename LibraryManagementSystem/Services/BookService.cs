@@ -1,5 +1,6 @@
 ﻿using LibraryManagementSystem.DTOs.Book;
 using LibraryManagementSystem.Entities;
+using Mapster;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,103 +9,64 @@ namespace LibraryManagementSystem.Services
 {
     public class BookService
     {
-        
-
-
-        //Mapping
-        public BookDto MapToBookDto(BookDto dto)
+        //navigation to the lists
+        private readonly LibraryDataStore Store;
+        public BookService(LibraryDataStore store)
         {
-            return new BookDto
+            Store = store;
+        }
+
+        public Book CreateBook(CreateBookDto dto, int currentUserId)
+        {
+            var book = dto.Adapt<Book>();  //Mapping using Mapster
+
+            book.Id = (Store.Books.Select(b => b.Id).DefaultIfEmpty(0).Max()) + 1;
+
+            book.CreatedByUserId = currentUserId;
+            book.CreatedDate = DateTime.Now;
+
+            Store.Books.Add(book);
+            return book;
+        }
+
+        public Book? Update(UpdateBookDto dto, int currentUserId)
+        {
+            var book = Store.Books.FirstOrDefault(b => b.Id == dto.Id);
+            if (book == null)
+                return null;
+
+            if (dto.Title != null) book.Title = dto.Title;
+            if (dto.PublishDate != null) book.PublishDate = dto.PublishDate.Value;
+            if (dto.Version != null) book.Version = dto.Version;
+            if (dto.Publisher != null) book.Publisher = dto.Publisher;
+            if (dto.AuthorId != null) book.AuthorId = dto.AuthorId.Value;
+            if (dto.CategoryId != null) book.CategoryId = dto.CategoryId.Value;
+
+            book.LastModifiedByUserId = currentUserId;
+            book.LastModifiedDate = DateTime.Now;
+
+            return book;
+        }
+
+        public List<BookListDto> GetAll()
+        {
+            return Store.Books.Select(book =>
             {
-                Id = dto.Id,
-                Title = dto.Title,
-                PublishDate = dto.PublishDate,
-                Version = dto.Version,
-                Publisher = dto.Publisher,
+                var dto = book.Adapt<BookListDto>();
 
-                AuthorId = dto.AuthorId,
-                AuthorName = dto.AuthorName,
-                CategoryId = dto.CategoryId,
-                CategoryName = dto.CategoryName,
-                TotalCopies = dto.TotalCopies,
-                AvailableCopies = dto.AvailableCopies,
+                dto.AuthorName = Store.Authors
+                .FirstOrDefault(a => a.Id == book.AuthorId)?.Name ?? "Unknown";
 
-                CreatedByUserId = dto.CreatedByUserId,
-                CreatedDate = dto.CreatedDate,
-                LastModifiedByUserId = dto.LastModifiedByUserId,
-                LastModifiedDate = dto.LastModifiedDate
-            };
+                dto.CategoryName = Store.Categories
+                .FirstOrDefault(c => c.Id == book.CategoryId)?.Name ?? "Unknown";
+
+                dto.IsAvailable = Store.InventoryRecords
+                .Any(r => r.BookId == book.Id && r.IsAvailable);
+
+                return dto;
+            }).ToList();
         }
 
-        public BookListDto MapToBookListDto(BookListDto dto)
-        {
-            return new BookListDto
-            {
-                Id = dto.Id,
-                Title = dto.Title,
-                PublishDate = dto.PublishDate,
-                Version = dto.Version,
-                Publisher = dto.Publisher,
 
-                AuthorName = dto.AuthorName,
-                CategoryName = dto.CategoryName,
-                IsAvailable = dto.IsAvailable,
-
-                CreatedByUserId = dto.CreatedByUserId,
-                CreatedDate = dto.CreatedDate,
-                LastModifiedByUserId = dto.LastModifiedByUserId,
-                LastModifiedDate = dto.LastModifiedDate
-            };
-        }
-
-        public Book MapToCreateBookDto(CreateBookDto dto)
-        {
-            return new Book
-            {
-                Title = dto.Title,
-                PublishDate = dto.PublishDate,
-                Version = dto.Version,
-                Publisher = dto.Publisher,
-
-                AuthorId = dto.AuthorId,
-                CategoryId = dto.CategoryId
-            };
-        }
-
-        public SearchBookParamsDto MapToSearchBookParamsDto(SearchBookParamsDto dto)
-        {
-            return new SearchBookParamsDto
-            {
-                Page = dto.Page,
-                PageSize = dto.PageSize,
-
-                SortBy = dto.SortBy,
-                SortDir = dto.SortDir,
-
-                Title = dto.Title,
-                PublishDate = dto.PublishDate,
-                Version = dto.Version,
-                Publisher = dto.Publisher,
-
-                AuthorId = dto.AuthorId,
-                CategoryId = dto.CategoryId,
-                IsAvailable = dto.IsAvailable
-            };
-        }
-
-        public UpdateBookDto MapToUpdateBookDto(UpdateBookDto dto)
-        {
-            return new UpdateBookDto 
-            { 
-                Id = dto.Id,
-                Title = dto.Title,
-                PublishDate = dto.PublishDate,
-                Version = dto.Version,
-                Publisher = dto.Publisher,
-
-                AuthorId = dto.AuthorId,
-                CategoryId = dto.CategoryId
-            };
-        }
     }
 }

@@ -10,19 +10,20 @@ namespace LibraryManagementSystem.DTOs.Book
         [Required]
         public int Id { get; set; } //BookId
 
-        [Required]
+        
         [StringLength(200)]
-        public string? Title { get; set; } = null!;
-        [Required]
+        public string? Title { get; set; }
+        
         public DateTime? PublishDate { get; set; }
+
         [StringLength(50)]
         public string? Version { get; set; }
+
         [StringLength(200)]
         public string? Publisher { get; set; }
 
-        [Required]
         public int? AuthorId { get; set; }
-        [Required]
+        
         public int? CategoryId { get; set; }
     }
 }
