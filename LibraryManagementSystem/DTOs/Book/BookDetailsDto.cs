@@ -7,6 +7,7 @@ namespace LibraryManagementSystem.DTOs.Book
     public class BookDetailsDto
     {
         public int Id { get; set; }
+
         public string Title { get; set; } = null!;
         public DateTime PublishDate { get; set; }
         public string? Version { get; set; }
@@ -20,5 +21,10 @@ namespace LibraryManagementSystem.DTOs.Book
 
         public int TotalCopies { get; set; }
         public int AvailableCopies { get; set; }
+
+        public int? CreatedByUserId { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public int? LastModifiedByUserId { get; set; }
+        public DateTime? LastModifiedDate { get; set; }
     }
 }

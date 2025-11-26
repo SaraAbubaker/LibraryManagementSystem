@@ -12,21 +12,17 @@ namespace LibraryManagementSystem.DTOs.Book
 
         [Required]
         [StringLength(200)]
-        public string Title { get; set; } = null!;
-
+        public string? Title { get; set; } = null!;
         [Required]
-        public DateTime PublishDate { get; set; }
-
+        public DateTime? PublishDate { get; set; }
         [StringLength(50)]
         public string? Version { get; set; }
-
         [StringLength(200)]
         public string? Publisher { get; set; }
 
         [Required]
-        public int AuthorId { get; set; }
-
+        public int? AuthorId { get; set; }
         [Required]
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; }
     }
 }
