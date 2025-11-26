@@ -57,23 +57,23 @@ namespace LibraryManagementSystem.Services
             return true;
         }
 
-        public List<BookListDto> GetBookDetails()
+        public BookListDto? GetBookDetails(int bookId)
         {
-            return Store.Books.Select(book =>
-            {
-                var dto = book.Adapt<BookListDto>();
+            var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
+            if (book == null) return null;
 
-                dto.AuthorName = Store.Authors
+            var dto = book.Adapt<BookListDto>(); //Mapping using Mapster
+
+            dto.AuthorName = Store.Authors
                 .FirstOrDefault(a => a.Id == book.AuthorId)?.Name ?? "Unknown";
 
-                dto.CategoryName = Store.Categories
+            dto.CategoryName = Store.Categories
                 .FirstOrDefault(c => c.Id == book.CategoryId)?.Name ?? "Unknown";
 
-                dto.IsAvailable = Store.InventoryRecords
+            dto.IsAvailable = Store.InventoryRecords
                 .Any(r => r.BookId == book.Id && r.IsAvailable);
 
-                return dto;
-            }).ToList();
+            return dto;
         }
 
         //To-Do: Search method
