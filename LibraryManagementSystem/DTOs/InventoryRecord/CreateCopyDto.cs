@@ -8,8 +8,6 @@ namespace LibraryManagementSystem.DTOs.InventoryRecord
     public class CreateCopyDto
     {
         [Required]
-        public int Id {  get; set; }
-        [Required]
         [RegularExpression(@"^BC-\d{2}$",
         ErrorMessage = "Copy code must follow format BC-01.")]
         public string CopyCode { get; set; } = null!;

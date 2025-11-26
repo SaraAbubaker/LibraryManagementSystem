@@ -29,11 +29,10 @@ namespace LibraryManagementSystem.Services
             return book;
         }
 
-        public Book? UpdateBook(UpdateBookDto dto, int currentUserId)
+        public bool UpdateBook(UpdateBookDto dto, int currentUserId)
         {
             var book = Store.Books.FirstOrDefault(b => b.Id == dto.Id);
-            if (book == null)
-                return null;
+            if (book == null) return false;
 
             if (dto.Title != null) book.Title = dto.Title;
             if (dto.PublishDate != null) book.PublishDate = dto.PublishDate.Value;
@@ -45,7 +44,17 @@ namespace LibraryManagementSystem.Services
             book.LastModifiedByUserId = currentUserId;
             book.LastModifiedDate = DateTime.Now;
 
-            return book;
+            return true;
+        }
+
+        public bool DeleteBook(int id)
+        {
+            var book = Store.Books.FirstOrDefault(b => b.Id == id);
+            if (book == null) return false;
+
+            //To-do: Remove copies in inventory & clear any inventory record
+            Store.Books.Remove(book);
+            return true;
         }
 
         public List<BookListDto> GetBookDetails()
@@ -67,6 +76,6 @@ namespace LibraryManagementSystem.Services
             }).ToList();
         }
 
-
+        //To-Do: Search method
     }
 }
