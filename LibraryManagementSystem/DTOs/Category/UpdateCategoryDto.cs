@@ -7,6 +7,7 @@ namespace LibraryManagementSystem.DTOs.Category
 {
     public class UpdateCategoryDto
     {
+        [Required]
         public int Id { get; set; }
 
         [Required]
