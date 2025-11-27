@@ -12,5 +12,8 @@ namespace LibraryManagementSystem.Entities
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public int? LastModifiedByUserId { get; set; } //nullable
         public DateTime? LastModifiedDate { get; set; } //nullable
+        public bool IsArchived { get; set; } = false;
+        public int? ArchivedByUserId { get; set; }
+        public DateTime? ArchivedDate { get; set; }
     }
 }

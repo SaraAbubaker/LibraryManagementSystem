@@ -66,17 +66,29 @@ namespace LibraryManagementSystem.Services
             return true;
         }
 
-        public bool DeleteBook(int id)
+        public bool ArchiveBook(int bookId, int performedByUserId)
         {
-            var book = Store.Books.FirstOrDefault(b => b.Id == id);
+            var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
             if (book == null) return false;
 
-            //To-do: Remove copies in inventory & clear any inventory record
-            Store.Books.Remove(book);
+            book.IsArchived = true;
+            book.ArchivedByUserId = performedByUserId;
+            book.ArchivedDate = DateTime.Now;
             return true;
         }
 
-        
+        public bool RestoreBookArchive(int bookId)
+        {
+            var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
+            if (book == null) return false;
+
+            book.IsArchived = false;
+            book.ArchivedByUserId = null;
+            book.ArchivedDate = null;
+            return true;
+        }
+
+
 
         //To-Do: Search method
     }

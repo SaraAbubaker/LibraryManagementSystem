@@ -9,10 +9,12 @@ namespace LibraryManagementSystem.Services
     public class InventoryService
     {
         private readonly LibraryDataStore Store;
+        private readonly BookService BookService;
 
-        public InventoryService(LibraryDataStore store)
+        public InventoryService(LibraryDataStore store, BookService bookService)
         {
             Store = store;
+            BookService = bookService;
         }
 
         //Available = true + audit fields set
@@ -49,18 +51,28 @@ namespace LibraryManagementSystem.Services
             return record;
         }
 
-        public bool RemoveCopy(int inventoryRecordId)
+        public bool RemoveCopy(int inventoryRecordId, int performedByUserId = 0)
         {
             var copy = Store.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
             if (copy == null) return false;
 
-            //Don't remove if copy is borrowed
+            //If copy borrowed don't remove
             if (!copy.IsAvailable)
                 return false;
 
+            var bookId = copy.BookId;
             Store.InventoryRecords.Remove(copy);
+
+            //If no more copies exist, archive the book
+            var anyLeft = Store.InventoryRecords.Any(r => r.BookId == bookId);
+            if (!anyLeft)
+            {
+                BookService.ArchiveBook(bookId, performedByUserId);
+            }
+
             return true;
         }
+
 
         public List<InventoryRecord> ListCopiesForBook(int bookId)
         {
