@@ -99,19 +99,22 @@ namespace LibraryManagementSystem.Services
             return borrow;
         }
 
-        public bool ReturnBook(int borrowRecordId)
+        public bool ReturnBook(int borrowRecordId, int currentUserId)
         {
             var record = Store.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId);
             if (record == null || record.ReturnDate != null)
                 return false;
 
-            record.ReturnDate = DateTime.UtcNow;
+            //Borrow Record update
+            record.ReturnDate = DateTime.Now;
+            record.LastModifiedByUserId = currentUserId;
+            record.LastModifiedDate = DateTime.Now;
 
-            var copy = Store.InventoryRecords.FirstOrDefault(i => i.Id == record.InventoryRecordId);
-            if (copy != null)
-                copy.IsAvailable = true;
+            //Inventory Record update
+            var success = Inventory.ReturnCopy(record.InventoryRecordId, currentUserId);
 
-            return true;
+            //true if both updates worked
+            return success;
         }
 
         //Overdue Logic
