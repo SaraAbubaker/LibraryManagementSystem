@@ -73,7 +73,6 @@ namespace LibraryManagementSystem.Services
             return true;
         }
 
-
         public List<InventoryRecord> ListCopiesForBook(int bookId)
         {
             return Store.InventoryRecords

@@ -11,7 +11,10 @@ namespace LibraryManagementSystem.Entities
         {
             new Author { Id = 0, Name = "Unknown", Email = string.Empty }
         };
-        public List<Category> Categories { get; set; } = [];
+        public List<Category> Categories { get; set; } = new List<Category>
+        {
+            new Category { Id = 0, Name = "Unknown" }
+        };
         public List<InventoryRecord> InventoryRecords { get; set; } = [];
         public List<User> Users { get; set; } = [];
         public List<BorrowRecord> BorrowRecords { get; set; } = [];
