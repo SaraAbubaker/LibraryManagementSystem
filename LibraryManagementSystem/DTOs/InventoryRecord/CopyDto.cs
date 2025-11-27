@@ -15,9 +15,9 @@ namespace LibraryManagementSystem.DTOs.InventoryRecord
         public string? BookTitle { get; set; }
 
         
-        public string? CreatedByUserId { get; set; }
+        public int? CreatedByUserId { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public string? LastModifiedByUserId { get; set; }
+        public int? LastModifiedByUserId { get; set; }
         public DateTime? LastModifiedDate { get; set; }
     }
 }

@@ -11,6 +11,9 @@ namespace LibraryManagementSystem.DTOs.BorrowRecord
         public DateTime BorrowDate { get; set; }
         public DateTime DueDate { get; set; }
         public DateTime? ReturnDate { get; set; }
+        public bool IsOverdue { get; set; }
+        public int OverdueDays { get; set; }
+
 
         public int InventoryRecordId { get; set; }
         public string? CopyCode { get; set; }
@@ -18,9 +21,9 @@ namespace LibraryManagementSystem.DTOs.BorrowRecord
         public int UserId { get; set; }
         public string? Username { get; set; }
 
-        public string? CreatedByUserId { get; set; }
+        public int? CreatedByUserId { get; set; }
         public DateTime? CreatedDate { get; set; }
-        public string? LastModifiedByUserId { get; set; }
+        public int? LastModifiedByUserId { get; set; }
         public DateTime? LastModifiedDate { get; set; }
     }
 }

@@ -10,10 +10,10 @@ namespace LibraryManagementSystem.DTOs.Category
         public string Name { get; set; } = null!;
 
         
-        public string? CreatedByUserId { get; set; }
+        public int? CreatedByUserId { get; set; }
         public DateTime? CreatedDate { get; set; }
 
-        public string? LastModifiedByUserId { get; set; }
+        public int? LastModifiedByUserId { get; set; }
         public DateTime? LastModifiedDate { get; set; }
     }
 }
