@@ -36,10 +36,14 @@ namespace LibraryManagementSystem.Services
 
             return result;
         }
-
-        public List<AuthorListDto> ListAuthors()
+        
+        public List<AuthorListDto> ListAuthors(bool includeArchived = false)
         {
-            return Store.Authors
+            var authors = includeArchived
+                ? Store.Authors.AsEnumerable()
+                : Store.Authors.Where(a => !a.IsArchived);
+
+            return authors
                 .OrderBy(a => a.Name)
                 .Select(a =>
                 {
@@ -50,10 +54,17 @@ namespace LibraryManagementSystem.Services
                 .ToList();
         }
 
-        public List<BookListDto> GetBooksByAuthor(int authorId)
+        public List<BookListDto> GetBooksByAuthor(int authorId, bool includeArchivedBooks = false)
         {
+            var author = Store.Authors.FirstOrDefault(a => a.Id == authorId);
+            if (author == null)
+                throw new KeyNotFoundException($"Author with ID {authorId} not found.");
+
+            if (author.IsArchived)
+                throw new InvalidOperationException("Author is archived.");
+
             var books = Store.Books
-                .Where(b => b.AuthorId == authorId)
+                .Where(b => b.AuthorId == authorId && (includeArchivedBooks || !b.IsArchived))
                 .OrderBy(b => b.Title)
                 .ToList();
 
@@ -62,11 +73,11 @@ namespace LibraryManagementSystem.Services
                 var dto = b.Adapt<BookListDto>();
 
                 dto.AuthorName = Store.Authors
-                    .FirstOrDefault(x => x.Id == b.AuthorId)
+                    .FirstOrDefault(x => x.Id == b.AuthorId && !x.IsArchived)
                     ?.Name ?? "Unknown";
 
                 dto.CategoryName = Store.Categories
-                    .FirstOrDefault(c => c.Id == b.CategoryId)
+                    .FirstOrDefault(c => c.Id == b.CategoryId && !c.IsArchived)
                     ?.Name ?? "Unknown";
 
                 dto.IsAvailable = Store.InventoryRecords
@@ -77,11 +88,15 @@ namespace LibraryManagementSystem.Services
             })
             .ToList();
         }
-
-        public AuthorListDto? EditAuthor(int id, UpdateAuthorDto dto)
+        
+        public AuthorListDto EditAuthor(int id, UpdateAuthorDto dto)
         {
             var author = Store.Authors.FirstOrDefault(a => a.Id == id);
-            if (author == null) return null;
+            if (author == null)
+                throw new KeyNotFoundException($"Author with ID {id} not found.");
+
+            if (author.IsArchived)
+                throw new InvalidOperationException("Cannot edit an archived author.");
 
             author.Name = dto.Name;
             author.Email = dto.Email;
@@ -92,7 +107,7 @@ namespace LibraryManagementSystem.Services
             return result;
         }
 
-        public bool DeleteAuthor(int id)
+        public bool ArchiveAuthor(int id, int performedByUserId)
         {
             var author = Store.Authors.FirstOrDefault(a => a.Id == id);
             if (author == null)
@@ -100,12 +115,40 @@ namespace LibraryManagementSystem.Services
 
             foreach (var book in Store.Books.Where(b => b.AuthorId == id))
             {
-                book.AuthorId = 0;  //Unknown Author
+                book.AuthorId = 0; // Unknown Author
             }
 
-            Store.Authors.Remove(author);
+            author.Name = "Unknown";
+            author.Email = string.Empty;
+
+            author.IsArchived = true;
+            author.ArchivedDate = DateTime.Now;
+            author.ArchivedByUserId = performedByUserId;
 
             return true;
+        }
+
+        public AuthorListDto RestoreAuthorArchive(int id, int performedByUserId = 0)
+        {
+            var author = Store.Authors.FirstOrDefault(a => a.Id == id);
+            if (author == null)
+                throw new KeyNotFoundException($"Author with ID {id} not found.");
+
+            if (!author.IsArchived)
+                throw new InvalidOperationException("Author is not archived.");
+
+            // restore
+            author.IsArchived = false;
+            author.ArchivedDate = null;
+            author.ArchivedByUserId = null;
+
+            author.LastModifiedByUserId = performedByUserId;
+            author.LastModifiedDate = DateTime.Now;
+
+            var dto = author.Adapt<AuthorListDto>();
+            dto.BookCount = Store.Books.Count(b => b.AuthorId == author.Id);
+
+            return dto;
         }
 
     }
