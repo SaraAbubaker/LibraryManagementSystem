@@ -6,7 +6,7 @@ using System.Text;
 
 namespace LibraryManagementSystem.DTOs.Author
 {
-    public class CreateAuthordDto
+    public class CreateAuthorDto
     {
         [Required]
         [StringLength(100, MinimumLength = 2)]

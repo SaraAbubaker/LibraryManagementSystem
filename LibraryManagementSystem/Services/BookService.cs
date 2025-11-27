@@ -9,13 +9,13 @@ namespace LibraryManagementSystem.Services
 {
     public class BookService
     {
-        //navigation to the lists
         private readonly LibraryDataStore Store;
         public BookService(LibraryDataStore store)
         {
             Store = store;
         }
 
+        //CRUD
         public Book CreateBook(CreateBookDto dto, int currentUserId)
         {
             var book = dto.Adapt<Book>();  //Mapping using Mapster
@@ -27,6 +27,25 @@ namespace LibraryManagementSystem.Services
 
             Store.Books.Add(book);
             return book;
+        }
+
+        public BookListDto? GetBookDetails(int bookId)
+        {
+            var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
+            if (book == null) return null;
+
+            var dto = book.Adapt<BookListDto>(); //Mapping using Mapster
+
+            dto.AuthorName = Store.Authors
+                .FirstOrDefault(a => a.Id == book.AuthorId)?.Name ?? "Unknown";
+
+            dto.CategoryName = Store.Categories
+                .FirstOrDefault(c => c.Id == book.CategoryId)?.Name ?? "Unknown";
+
+            dto.IsAvailable = Store.InventoryRecords
+                .Any(r => r.BookId == book.Id && r.IsAvailable);
+
+            return dto;
         }
 
         public bool UpdateBook(UpdateBookDto dto, int currentUserId)
@@ -57,24 +76,7 @@ namespace LibraryManagementSystem.Services
             return true;
         }
 
-        public BookListDto? GetBookDetails(int bookId)
-        {
-            var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
-            if (book == null) return null;
-
-            var dto = book.Adapt<BookListDto>(); //Mapping using Mapster
-
-            dto.AuthorName = Store.Authors
-                .FirstOrDefault(a => a.Id == book.AuthorId)?.Name ?? "Unknown";
-
-            dto.CategoryName = Store.Categories
-                .FirstOrDefault(c => c.Id == book.CategoryId)?.Name ?? "Unknown";
-
-            dto.IsAvailable = Store.InventoryRecords
-                .Any(r => r.BookId == book.Id && r.IsAvailable);
-
-            return dto;
-        }
+        
 
         //To-Do: Search method
     }

@@ -12,31 +12,39 @@ namespace LibraryManagementSystem.Services
 {
     public class AuthorService
     {
-        private readonly List<Author> Authors;
-        private readonly List<Book> Books;
-        private readonly List<Category> Categories;
-        private readonly List<InventoryRecord> Inventory;
-
-        public AuthorService(
-            List<Author> authors,
-            List<Book> books,
-            List<Category> categories,
-            List<InventoryRecord> inventoryRecords)
+        private readonly LibraryDataStore Store;
+        //Injection
+        public AuthorService(LibraryDataStore store)
         {
-            Authors = authors;
-            Books = books;
-            Categories = categories;
-            Inventory = inventoryRecords;
+            Store = store;
+        }
+
+        //CRUD
+        public AuthorListDto CreateAuthor(CreateAuthorDto dto)
+        {
+            var author = new Author
+            {
+                Id = Store.Authors.Count + 1,
+                Name = dto.Name,
+                Email = dto.Email
+            };
+
+            Store.Authors.Add(author);
+
+            var result = author.Adapt<AuthorListDto>();
+            result.BookCount = Store.Books.Count(b => b.AuthorId == author.Id);
+
+            return result;
         }
 
         public List<AuthorListDto> ListAuthors()
         {
-            return Authors
+            return Store.Authors
                 .OrderBy(a => a.Name)
                 .Select(a =>
                 {
                     var dto = a.Adapt<AuthorListDto>();
-                    dto.BookCount = Books.Count(b => b.AuthorId == a.Id);
+                    dto.BookCount = Store.Books.Count(b => b.AuthorId == a.Id);
                     return dto;
                 })
                 .ToList();
@@ -44,7 +52,7 @@ namespace LibraryManagementSystem.Services
 
         public List<BookListDto> GetBooksByAuthor(int authorId)
         {
-            var books = Books
+            var books = Store.Books
                 .Where(b => b.AuthorId == authorId)
                 .OrderBy(b => b.Title)
                 .ToList();
@@ -53,15 +61,15 @@ namespace LibraryManagementSystem.Services
             {
                 var dto = b.Adapt<BookListDto>();
 
-                dto.AuthorName = Authors
+                dto.AuthorName = Store.Authors
                     .FirstOrDefault(x => x.Id == b.AuthorId)
                     ?.Name ?? "Unknown";
 
-                dto.CategoryName = Categories
+                dto.CategoryName = Store.Categories
                     .FirstOrDefault(c => c.Id == b.CategoryId)
                     ?.Name ?? "Unknown";
 
-                dto.IsAvailable = Inventory
+                dto.IsAvailable = Store.InventoryRecords
                     .Where(r => r.BookId == b.Id)
                     .Any(r => r.IsAvailable);
 
@@ -70,47 +78,35 @@ namespace LibraryManagementSystem.Services
             .ToList();
         }
 
-        public AuthorListDto AddAuthor(CreateAuthordDto dto)
-        {
-            var author = new Author
-            {
-                Id = Authors.Count + 1,
-                Name = dto.Name,
-                Email = dto.Email
-            };
-
-            Authors.Add(author);
-
-            var result = author.Adapt<AuthorListDto>();
-            result.BookCount = Books.Count(b => b.AuthorId == author.Id);
-
-            return result;
-        }
-
-
         public AuthorListDto? EditAuthor(int id, UpdateAuthorDto dto)
         {
-            var author = Authors.FirstOrDefault(a => a.Id == id);
+            var author = Store.Authors.FirstOrDefault(a => a.Id == id);
             if (author == null) return null;
 
             author.Name = dto.Name;
             author.Email = dto.Email;
 
             var result = author.Adapt<AuthorListDto>();
-            result.BookCount = Books.Count(b => b.AuthorId == author.Id);
+            result.BookCount = Store.Books.Count(b => b.AuthorId == author.Id);
 
             return result;
         }
 
-        //To-do: make all books with this author have unkown author
         public bool DeleteAuthor(int id)
         {
-            var author = Authors.FirstOrDefault(a => a.Id == id);
+            var author = Store.Authors.FirstOrDefault(a => a.Id == id);
             if (author == null)
                 return false;
 
-            Authors.Remove(author);
+            foreach (var book in Store.Books.Where(b => b.AuthorId == id))
+            {
+                book.AuthorId = 0;  //Unknown Author
+            }
+
+            Store.Authors.Remove(author);
+
             return true;
         }
+
     }
 }
