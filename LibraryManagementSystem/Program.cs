@@ -1,15 +1,28 @@
 ﻿using LibraryManagementSystem;
 using LibraryManagementSystem.Entities;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System.ComponentModel;
 
-class Program
+
+var builder = WebApplication.CreateBuilder(args);
+// Add services to the container
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
 {
-    static void Main()
-    {
-        var store = new LibraryDataStore();
-        LibraryDataSeeder.Seed(store);
-
-        Console.WriteLine($"Authors: {store.Authors.Count}");
-        Console.WriteLine($"Categories: {store.Categories.Count}");
-        
-    }
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+
