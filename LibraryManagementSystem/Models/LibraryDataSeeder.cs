@@ -49,7 +49,7 @@ namespace LibraryManagementSystem.Entities
                 }
             ];
 
-            store.Inventory = [
+            store.InventoryRecords = [
                 // Book 1 (1984)
                 new InventoryRecord { Id = 1, BookId = 1, CopyCode = "1984-01", IsAvailable = true },
                 new InventoryRecord { Id = 2, BookId = 1, CopyCode = "1984-02", IsAvailable = true },

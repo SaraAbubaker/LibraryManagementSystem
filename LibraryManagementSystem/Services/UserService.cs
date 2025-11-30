@@ -88,6 +88,11 @@ namespace LibraryManagementSystem.Services
             return dto;
         }
 
-
+        public List<UserDto> GetAllUsers()
+        {
+            return Store.Users
+                .Select(u => u.Adapt<UserDto>())
+                .ToList();
+        }
     }
 }
