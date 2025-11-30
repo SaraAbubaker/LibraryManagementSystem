@@ -1,9 +1,12 @@
-﻿using LibraryManagementSystem.DTOs.Book;
+﻿using LibraryManagementSystem.DTOs;
+using LibraryManagementSystem.DTOs.Book;
 using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Extensions;
 using Mapster;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LibraryManagementSystem.Services
 {
@@ -131,18 +134,75 @@ namespace LibraryManagementSystem.Services
             return true;
         }
 
-        //To-Do: Search method (filter, sort, pagination)
-
-        //Searches title
-        public List<Book> SearchBooks(string title)
+        //Search method (filter, sort, pagination)
+        public List<BookListDto> SearchBooks(SearchBookParamsDto dto)
         {
-            if (string.IsNullOrWhiteSpace(title))
-                return new List<Book>();
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
 
-            return Store.Books
-                .Where(b => !string.IsNullOrEmpty(b.Title) &&
-                            b.Title.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
+            var skip = (Math.Max(1, dto.Page) - 1) * Math.Max(1, dto.PageSize);
+
+            var results = Store.Books
+
+                //Search
+                .WhereIf(!string.IsNullOrWhiteSpace(dto.SearchParam), b =>
+                    (b.Title ?? "").IndexOf(dto.SearchParam!, StringComparison.OrdinalIgnoreCase) >= 0
+                    || (Store.Authors.FirstOrDefault(a => a.Id == b.AuthorId)?.Name ?? "")
+                        .IndexOf(dto.SearchParam!, StringComparison.OrdinalIgnoreCase) >= 0
+                    || (Store.Categories.FirstOrDefault(c => c.Id == b.CategoryId)?.Name ?? "")
+                        .IndexOf(dto.SearchParam!, StringComparison.OrdinalIgnoreCase) >= 0
+                    || (b.Publisher ?? "").IndexOf(dto.SearchParam!, StringComparison.OrdinalIgnoreCase) >= 0
+                )
+
+                //Filter
+                .WhereIf(!string.IsNullOrWhiteSpace(dto.Title), b =>
+                    (b.Title ?? "").IndexOf(dto.Title!, StringComparison.OrdinalIgnoreCase) >= 0)
+                .WhereIf(dto.AuthorId.HasValue, b => b.AuthorId == dto.AuthorId!.Value)
+                .WhereIf(dto.CategoryId.HasValue, b => b.CategoryId == dto.CategoryId!.Value)
+                .WhereIf(!string.IsNullOrWhiteSpace(dto.Publisher), b =>
+                    (b.Publisher ?? "").IndexOf(dto.Publisher!, StringComparison.OrdinalIgnoreCase) >= 0)
+                .WhereIf(dto.IsAvailable.HasValue, b =>
+                    Store.InventoryRecords.Any(r => r.BookId == b.Id && r.IsAvailable) == dto.IsAvailable!.Value)
+
+                .WhereIf(dto.PublishDate.HasValue, b => b.PublishDate.Date == dto.PublishDate!.Value.Date)
+                .ToList();
+
+            //Sorting
+            var sortKey = (dto.SortBy ?? "title").Trim().ToLower();
+            var desc = dto.SortDir?.Equals("desc", StringComparison.OrdinalIgnoreCase) ?? false;
+
+            var keySelector = new Dictionary<string, Func<Book, object>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["title"] = b => b.Title ?? "",
+                ["publishdate"] = b => b.PublishDate,
+                ["author"] = b => Store.Authors.FirstOrDefault(a => a.Id == b.AuthorId)?.Name ?? "",
+                ["category"] = b => Store.Categories.FirstOrDefault(c => c.Id == b.CategoryId)?.Name ?? "",
+                ["publisher"] = b => b.Publisher ?? "",
+                ["isavailable"] = b => Store.InventoryRecords.Any(r => r.BookId == b.Id && r.IsAvailable)
+            };
+
+            var selector = keySelector.TryGetValue(sortKey, out var sel) ? sel : keySelector["title"];
+            var ordered = desc ? results.OrderByDescending(selector) : results.OrderBy(selector);
+
+
+            //Pagination + mapping
+            return ordered
+                .Skip(skip)
+                .Take(Math.Max(1, dto.PageSize))
+                .Select(b =>
+                {
+                    var outDto = b.Adapt<BookListDto>();
+                    outDto.AuthorName = Store.Authors.FirstOrDefault(a => a.Id == b.AuthorId)?.Name ?? "Unknown";
+                    outDto.CategoryName = Store.Categories.FirstOrDefault(c => c.Id == b.CategoryId)?.Name ?? "Unknown";
+                    outDto.Publisher = b.Publisher ?? string.Empty;
+                    outDto.IsAvailable = Store.InventoryRecords.Any(r => r.BookId == b.Id && r.IsAvailable);
+                    return outDto;
+                })
                 .ToList();
         }
+
+
+
+
+
     }
 }
