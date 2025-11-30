@@ -26,42 +26,28 @@ namespace LibraryManagementSystem.Services
                 nextBorrowRecordId = Store.BorrowRecords.Max(r => r.Id) + 1;
         }
 
-        //ListOne
-        public List<Book> SearchBooks(string title)
-        {
-            if (string.IsNullOrWhiteSpace(title))
-                return new List<Book>();
-
-            title = title.ToLower();
-
-            return Store.Books
-                .Where(b => b.Title.ToLower().Contains(title))
-                .ToList();
-        }
-
         //ListAll
         public List<BorrowDto> GetBorrowDetails()
         {
-            return BorrowRecords
-                .Select(b =>
+            var query =
+                from b in BorrowRecords
+                join i in Store.InventoryRecords on b.InventoryRecordId equals i.Id into invGroup
+                from inv in invGroup.DefaultIfEmpty()
+                join u in Store.Users on b.UserId equals u.Id into userGroup
+                from user in userGroup.DefaultIfEmpty()
+                select new BorrowDto
                 {
-                    var dto = b.Adapt<BorrowDto>();
+                    Id = b.Id,
+                    BorrowDate = b.BorrowDate,
+                    DueDate = b.DueDate,
+                    ReturnDate = b.ReturnDate,
+                    CopyCode = inv.CopyCode,
+                    Username = user.Username,
+                    IsOverdue = IsBorrowOverdue(b),
+                    OverdueDays = CalculateOverdueDays(b)
+                };
 
-                    var inventory = Store.InventoryRecords
-                        .FirstOrDefault(i => i.Id == b.InventoryRecordId);
-
-                    var user = Store.Users
-                        .FirstOrDefault(u => u.Id == b.UserId);
-
-                    dto.CopyCode = inventory?.CopyCode;
-                    dto.Username = user?.Username;
-
-                    dto.IsOverdue = IsBorrowOverdue(b);
-                    dto.OverdueDays = CalculateOverdueDays(b);
-
-                    return dto;
-                })
-                .ToList();
+            return query.ToList();
         }
 
         //Availability

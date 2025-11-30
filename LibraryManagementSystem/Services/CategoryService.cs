@@ -37,20 +37,6 @@ namespace LibraryManagementSystem.Services
                 .ToList();
         }
 
-        public List<BookListDto> ListBooksByCategory(int categoryId)
-        {
-            var category = Store.Categories.FirstOrDefault(c => c.Id == categoryId);
-
-            if (category == null || category.IsArchived)
-                categoryId = 0; // unknown
-
-            var books = Store.Books
-                .Where(b => b.CategoryId == categoryId)
-                .ToList();
-
-            return books.Adapt<List<BookListDto>>();
-        }
-
         public CategoryDto? UpdateCategory(UpdateCategoryDto dto, int UserId)
         {
             if (dto.Id == 0)
@@ -89,26 +75,6 @@ namespace LibraryManagementSystem.Services
             category.ArchivedDate = DateTime.Now;
 
             return true;
-        }
-
-        //Unarchives category but doesn't move books back
-        public CategoryDto? UnarchiveCategory(int id, int userId)
-        {
-            if (id == 0)
-                return null;
-
-            var category = Store.Categories.FirstOrDefault(c => c.Id == id);
-            if (category == null || !category.IsArchived)
-                return null;
-
-            category.IsArchived = false;
-            category.ArchivedByUserId = null;
-            category.ArchivedDate = null;
-
-            category.LastModifiedByUserId = userId;
-            category.LastModifiedDate = DateTime.Now;
-
-            return category.Adapt<CategoryDto>();
         }
 
     }
