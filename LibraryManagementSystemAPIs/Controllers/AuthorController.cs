@@ -23,6 +23,8 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(AuthorListDto), 201)]
+        [ProducesResponseType(400)]
         public IActionResult CreateAuthor(CreateAuthorDto dto)
         {
             var result = Service.CreateAuthor(dto);

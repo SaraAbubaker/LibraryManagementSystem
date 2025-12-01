@@ -25,7 +25,7 @@ namespace LibraryManagementSystem.Services
 
             copy.IsAvailable = true;
             copy.LastModifiedByUserId = currentUserId;
-            copy.LastModifiedDate = DateTime.Now;
+            copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Today);
             return true;
         }
 
@@ -44,7 +44,7 @@ namespace LibraryManagementSystem.Services
                 CopyCode = copyCode,
                 IsAvailable = true,
                 CreatedByUserId = createdByUserId,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateOnly.FromDateTime(DateTime.UtcNow)
             };
 
             Store.InventoryRecords.Add(record);

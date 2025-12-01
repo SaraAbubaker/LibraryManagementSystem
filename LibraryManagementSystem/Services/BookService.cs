@@ -26,7 +26,8 @@ namespace LibraryManagementSystem.Services
             book.Id = (Store.Books.Select(b => b.Id).DefaultIfEmpty(0).Max()) + 1;
 
             book.CreatedByUserId = currentUserId;
-            book.CreatedDate = DateTime.Now;
+            book.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
+
 
             Store.Books.Add(book);
             return book;
@@ -118,7 +119,7 @@ namespace LibraryManagementSystem.Services
             if (dto.CategoryId != null) book.CategoryId = dto.CategoryId.Value;
 
             book.LastModifiedByUserId = currentUserId;
-            book.LastModifiedDate = DateTime.Now;
+            book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             return true;
         }
@@ -130,7 +131,7 @@ namespace LibraryManagementSystem.Services
 
             book.IsArchived = true;
             book.ArchivedByUserId = performedByUserId;
-            book.ArchivedDate = DateTime.Now;
+            book.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             return true;
         }
 
@@ -163,7 +164,7 @@ namespace LibraryManagementSystem.Services
                 .WhereIf(dto.IsAvailable.HasValue, b =>
                     Store.InventoryRecords.Any(r => r.BookId == b.Id && r.IsAvailable) == dto.IsAvailable!.Value)
 
-                .WhereIf(dto.PublishDate.HasValue, b => b.PublishDate.Date == dto.PublishDate!.Value.Date)
+                .WhereIf(dto.PublishDate.HasValue, b => b.PublishDate == dto.PublishDate!.Value)
                 .ToList();
 
             //Sorting

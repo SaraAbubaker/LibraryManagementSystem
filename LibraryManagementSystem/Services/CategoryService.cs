@@ -48,7 +48,7 @@ namespace LibraryManagementSystem.Services
 
             category.Name = dto.Name;
 
-            category.LastModifiedDate = DateTime.Now;
+            category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             category.LastModifiedByUserId = UserId;
 
             return category.Adapt<CategoryDto>();
@@ -72,7 +72,7 @@ namespace LibraryManagementSystem.Services
 
             category.IsArchived = true;
             category.ArchivedByUserId = archivedByUserId;
-            category.ArchivedDate = DateTime.Now;
+            category.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
             return true;
         }

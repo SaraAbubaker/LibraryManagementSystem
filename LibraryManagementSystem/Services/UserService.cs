@@ -38,7 +38,7 @@ namespace LibraryManagementSystem.Services
             user.BorrowRecords = user.BorrowRecords ?? new List<BorrowRecord>();
 
             user.CreatedByUserId = createdByUserId;
-            user.CreatedDate = DateTime.Now;
+            user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
             Store.Users.Add(user);
 

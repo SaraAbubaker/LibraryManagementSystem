@@ -12,7 +12,7 @@ namespace LibraryManagementSystem.Entities
         public string Title { get; set; } = null!;
 
         [Required]
-        public DateTime PublishDate { get; set; }
+        public DateOnly PublishDate { get; set; }
 
         [StringLength(50)]
         public string? Version { get; set; }

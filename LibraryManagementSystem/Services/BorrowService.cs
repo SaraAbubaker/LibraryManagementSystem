@@ -71,8 +71,8 @@ namespace LibraryManagementSystem.Services
                 Id = nextBorrowRecordId++,
                 InventoryRecordId = dto.InventoryRecordId,
                 UserId = dto.UserId,
-                BorrowDate = DateTime.Now,
-                DueDate = dto.DueDate ?? DateTime.Now.AddDays(14),
+                BorrowDate = DateOnly.FromDateTime(DateTime.Now),
+                DueDate = dto.DueDate ?? DateOnly.FromDateTime(DateTime.Now.AddDays(14)),
                 ReturnDate = null
             };
 
@@ -92,9 +92,9 @@ namespace LibraryManagementSystem.Services
                 return false;
 
             //Borrow Record update
-            record.ReturnDate = DateTime.Now;
+            record.ReturnDate = DateOnly.FromDateTime(DateTime.Now);
             record.LastModifiedByUserId = currentUserId;
-            record.LastModifiedDate = DateTime.Now;
+            record.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             //Inventory Record update
             var success = Inventory.ReturnCopy(record.InventoryRecordId, currentUserId);
@@ -106,9 +106,11 @@ namespace LibraryManagementSystem.Services
         //Overdue Logic
         public List<BorrowRecord> GetOverdueRecords()
         {
-            var now = DateTime.Now;
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
             return Store.BorrowRecords
-                .Where(r => r.ReturnDate == null && r.DueDate < now)
+                .Where(r => r.ReturnDate == null &&
+                            r.DueDate < today)
                 .ToList();
         }
 
@@ -117,19 +119,20 @@ namespace LibraryManagementSystem.Services
             if (record.ReturnDate != null)
                 return false;
 
-            return DateTime.Now > record.DueDate;
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            return today > record.DueDate;
         }
 
         public int CalculateOverdueDays(BorrowRecord record)
         {
-            // If returned show return date otherwise show today
-            var endDate = record.ReturnDate ?? DateTime.Now;
+            var endDate = record.ReturnDate ?? DateOnly.FromDateTime(DateTime.Today);
+            var dueDate = record.DueDate;
 
-            //not overdue = 0
-            if (endDate <= record.DueDate)
-                return 0;
+            //if not overdue, return 0
+            if (endDate <= dueDate) return 0;
 
-            return (endDate - record.DueDate).Days;
+            var days = (endDate.ToDateTime(TimeOnly.MinValue) - dueDate.ToDateTime(TimeOnly.MinValue)).Days;
+            return Math.Max(0, days);
         }
 
     }

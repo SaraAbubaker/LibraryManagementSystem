@@ -24,7 +24,7 @@ namespace LibraryManagementSystem.Services
         {
             var author = new Author
             {
-                Id = Store.Authors.Count + 1,
+                Id = Store.Authors.Any() ? Store.Authors.Max(a => a.Id) + 1 : 1,
                 Name = dto.Name,
                 Email = dto.Email
             };
@@ -85,7 +85,7 @@ namespace LibraryManagementSystem.Services
             author.Email = string.Empty;
 
             author.IsArchived = true;
-            author.ArchivedDate = DateTime.Now;
+            author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             author.ArchivedByUserId = performedByUserId;
 
             return true;
