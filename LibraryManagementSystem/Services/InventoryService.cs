@@ -1,4 +1,6 @@
 ﻿using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Exceptions;
+using LibraryManagementSystem.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,10 +22,13 @@ namespace LibraryManagementSystem.Services
         //Available = true + audit fields set
         public bool ReturnCopy(int inventoryRecordId, int currentUserId)
         {
-            var copy = Store.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
-            if (copy == null) return false;
+            Validate.Positive(inventoryRecordId, "inventoryRecordId");
+            Validate.Positive(currentUserId, "currentUserId");
 
-            copy.IsAvailable = true;
+            var copy = Store.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
+            Validate.Exists(copy, $"Inventory record with id {inventoryRecordId}");
+
+            copy!.IsAvailable = true;
             copy.LastModifiedByUserId = currentUserId;
             copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Today);
             return true;
@@ -32,8 +37,9 @@ namespace LibraryManagementSystem.Services
         //Create, Remove, Read
         public InventoryRecord CreateCopy(int bookId, string copyCode, int createdByUserId)
         {
-            if (string.IsNullOrWhiteSpace(copyCode))
-                throw new ArgumentException("copyCode is required", nameof(copyCode));
+            Validate.Positive(bookId, "bookId");
+            Validate.NotEmpty(copyCode, "copyCode");
+            Validate.Positive(createdByUserId, "createdByUserId");
 
             var nextId = Store.InventoryRecords.Any() ? Store.InventoryRecords.Max(r => r.Id) + 1 : 1;
 
@@ -53,12 +59,14 @@ namespace LibraryManagementSystem.Services
 
         public bool RemoveCopy(int inventoryRecordId, int performedByUserId = 0)
         {
-            var copy = Store.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
-            if (copy == null) return false;
+            Validate.Positive(inventoryRecordId, "inventoryRecordId");
+            Validate.Positive(performedByUserId, "performedByUserId");
 
-            //If copy borrowed don't remove
-            if (!copy.IsAvailable)
-                return false;
+            var copy = Store.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
+            Validate.Exists(copy, $"Inventory record with id {inventoryRecordId}");
+
+            if (!copy!.IsAvailable)
+                throw new ConflictException("Cannot remove a copy that is currently borrowed.");
 
             var bookId = copy.BookId;
             Store.InventoryRecords.Remove(copy);

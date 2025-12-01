@@ -2,6 +2,7 @@
 using LibraryManagementSystem.DTOs.Book;
 using LibraryManagementSystem.Entities;
 using LibraryManagementSystem.Extensions;
+using LibraryManagementSystem.Helpers;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,9 @@ namespace LibraryManagementSystem.Services
         //CRUD
         public Book CreateBook(CreateBookDto dto, int currentUserId)
         {
+            Validate.NotNull(dto, nameof(dto));
+            Validate.Positive(currentUserId, "currentUserId");
+
             var book = dto.Adapt<Book>();  //Mapping using Mapster
 
             book.Id = (Store.Books.Select(b => b.Id).DefaultIfEmpty(0).Max()) + 1;
@@ -36,7 +40,7 @@ namespace LibraryManagementSystem.Services
         public BookListDto? GetBookDetails(int bookId)
         {
             var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
-            if (book == null) return null;
+            Validate.Exists(book, $"Book with id {bookId}");
 
             var dto = book.Adapt<BookListDto>();
 
@@ -64,8 +68,8 @@ namespace LibraryManagementSystem.Services
         public List<BookListDto> GetBooksByAuthor(int authorId)
         {
             var author = Store.Authors
-                .FirstOrDefault(a => a.Id == authorId && !a.IsArchived)
-                ?? throw new InvalidOperationException("Author not found.");
+                .FirstOrDefault(a => a.Id == authorId && !a.IsArchived);
+            Validate.Exists(author, "Author not found.");
 
             var query =
                 from b in Store.Books
@@ -108,8 +112,12 @@ namespace LibraryManagementSystem.Services
 
         public bool UpdateBook(UpdateBookDto dto, int currentUserId)
         {
-            var book = Store.Books.FirstOrDefault(b => b.Id == dto.Id);
-            if (book == null) return false;
+            Validate.NotNull(dto, nameof(dto));
+            Validate.Positive(dto.Id, "Id");
+            Validate.Positive(currentUserId, "currentUserId");
+
+            if (Store.Books.FirstOrDefault(b => b.Id == dto.Id) is not Book book)
+                throw new LibraryManagementSystem.Exceptions.NotFoundException($"Book with id {dto.Id} not found.");
 
             if (dto.Title != null) book.Title = dto.Title;
             if (dto.PublishDate != null) book.PublishDate = dto.PublishDate.Value;
@@ -126,19 +134,23 @@ namespace LibraryManagementSystem.Services
 
         public bool ArchiveBook(int bookId, int performedByUserId)
         {
-            var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
-            if (book == null) return false;
+            Validate.Positive(bookId, "bookId");
+            Validate.Positive(performedByUserId, "performedByUserId");
+
+            if (Store.Books.FirstOrDefault(b => b.Id == bookId) is not Book book)
+                throw new LibraryManagementSystem.Exceptions.NotFoundException($"Book with id {bookId} not found.");
 
             book.IsArchived = true;
             book.ArchivedByUserId = performedByUserId;
             book.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
+
             return true;
         }
 
         //Search method (filter, sort, pagination)
         public List<BookListDto> SearchBooks(SearchBookParamsDto dto)
         {
-            if (dto == null) throw new ArgumentNullException(nameof(dto));
+            Validate.NotNull(dto, nameof(dto));
 
             var authorsById = Store.Authors.ToDictionary(a => a.Id, a => a.Name);
             var categoriesById = Store.Categories.ToDictionary(c => c.Id, c => c.Name);

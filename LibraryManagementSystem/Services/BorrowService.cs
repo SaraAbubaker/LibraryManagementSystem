@@ -1,10 +1,12 @@
-﻿using LibraryManagementSystem.Entities;
+﻿using LibraryManagementSystem.DTOs.BorrowRecord;
+using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Exceptions;
+using LibraryManagementSystem.Helpers;
+using Mapster;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
-using Mapster;
-using LibraryManagementSystem.DTOs.BorrowRecord;
+using System.Text;
 
 namespace LibraryManagementSystem.Services
 {
@@ -66,6 +68,10 @@ namespace LibraryManagementSystem.Services
         //Borrow & Return
         public BorrowRecord BorrowBook(RequestBorrowDto dto)
         {
+            Validate.NotNull(dto, nameof(dto));
+            Validate.Positive(dto.InventoryRecordId, nameof(dto.InventoryRecordId));
+            Validate.Positive(dto.UserId, nameof(dto.UserId));
+
             var borrow = new BorrowRecord
             {
                 Id = nextBorrowRecordId++,
@@ -78,18 +84,23 @@ namespace LibraryManagementSystem.Services
 
             BorrowRecords.Add(borrow);
 
-            var copy = Store.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId);
-            if (copy != null)
-                copy.IsAvailable = false;
+            if (Store.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId) is not InventoryRecord copy)
+                throw new NotFoundException($"Inventory record with id {dto.InventoryRecordId} not found.");
+
+            copy.IsAvailable = false;
 
             return borrow;
         }
 
         public bool ReturnBook(int borrowRecordId, int currentUserId)
         {
-            var record = Store.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId);
-            if (record == null || record.ReturnDate != null)
-                return false;
+            Validate.Positive(borrowRecordId, nameof(borrowRecordId));
+            Validate.Positive(currentUserId, nameof(currentUserId));
+
+            if (Store.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId) is not BorrowRecord record)
+                throw new NotFoundException($"Borrow record with id {borrowRecordId} not found.");
+            if (record.ReturnDate != null)
+                throw new ConflictException($"Borrow record with id {borrowRecordId} has already been returned.");
 
             //Borrow Record update
             record.ReturnDate = DateOnly.FromDateTime(DateTime.Now);

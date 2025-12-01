@@ -1,12 +1,14 @@
 ﻿using LibraryManagementSystem.DTOs.Author;
 using LibraryManagementSystem.DTOs.Book;
 using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Exceptions;
+using LibraryManagementSystem.Helpers;
 using Mapster;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
-using System.Linq;
 
 namespace LibraryManagementSystem.Services
 {
@@ -22,6 +24,9 @@ namespace LibraryManagementSystem.Services
         //CRUD
         public AuthorListDto CreateAuthor(CreateAuthorDto dto)
         {
+            Validate.NotNull(dto, nameof(dto));
+            Validate.NotEmpty(dto.Name, "Author name");
+
             var author = new Author
             {
                 Id = Store.Authors.Any() ? Store.Authors.Max(a => a.Id) + 1 : 1,
@@ -59,12 +64,14 @@ namespace LibraryManagementSystem.Services
 
         public bool EditAuthor(UpdateAuthorDto dto)
         {
+            Validate.NotNull(dto, nameof(dto));
+            Validate.Positive(dto.Id, "Id");
+            Validate.NotEmpty(dto.Name, "Author name");
+
             var author = Store.Authors.FirstOrDefault(a => a.Id == dto.Id && !a.IsArchived);
+            Validate.Exists(author, $"Author with id {dto.Id}");
 
-            if (author == null)
-                return false;
-
-            author.Name = dto.Name;
+            author!.Name = dto.Name;
             author.Email = dto.Email;
 
             return true;
@@ -72,9 +79,14 @@ namespace LibraryManagementSystem.Services
 
         public bool ArchiveAuthor(int id, int performedByUserId)
         {
+            Validate.Positive(id, "Id");
+            Validate.Positive(performedByUserId, "performedByUserId");
+
             var author = Store.Authors.FirstOrDefault(a => a.Id == id);
-            if (author == null)
-                return false;
+            Validate.Exists(author, $"Author with id {id}");
+
+            if (author!.IsArchived)
+                throw new ConflictException($"Author with id {id} is already archived.");
 
             foreach (var book in Store.Books.Where(b => b.AuthorId == id))
             {
@@ -92,5 +104,4 @@ namespace LibraryManagementSystem.Services
         }
 
     }
-
 }
