@@ -18,41 +18,65 @@ namespace LibraryManagementSystem.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var result = Service.GetAllCategories();
-            return Ok(result);
+            try
+            {
+                var result = Service.GetAllCategories();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost]
         public IActionResult Create(CreateCategoryDto dto)
         {
-            var created = Service.CreateCategory(dto);
-            return Ok(created);
+            try
+            {
+                var created = Service.CreateCategory(dto);
+                return Ok(created);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut]
-        public IActionResult Update(UpdateCategoryDto dto)
+        public IActionResult Update(UpdateCategoryDto dto, [FromQuery] int userId)
         {
-            var currentUserId = 1; //temp until authentication
+            try
+            {
+                var updated = Service.UpdateCategory(dto, userId);
 
-            var updated = Service.UpdateCategory(dto, currentUserId);
+                if (updated == null)
+                    return NotFound("Category not found.");
 
-            if (updated == null)
-                return NotFound("Category not found.");
-
-            return Ok(updated);
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPut("delete {id}")]
-        public IActionResult Archive(int id)
+        [HttpPut("archive {id}")]
+        public IActionResult Archive(int id, [FromQuery] int userId)
         {
-            var currentUserId = 1; //temp
+            try
+            {
+                var success = Service.ArchiveCategory(id, userId);
 
-            var success = Service.ArchiveCategory(id, currentUserId);
+                if (!success)
+                    return NotFound("Category not found.");
 
-            if (!success)
-                return NotFound("Category not found.");
-
-            return Ok("Category archived successfully.");
+                return Ok("Category archived successfully.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

@@ -10,17 +10,23 @@ namespace LibraryManagementSystem.Controllers
     {
         private readonly UserService Service;
 
-    public UserController(UserService service)
+        public UserController(UserService service)
         {
             Service = service;
         }
 
         [HttpPost("register")]
-        public IActionResult Register(RegisterUserDto dto)
+        public IActionResult Register(RegisterUserDto dto, [FromQuery] int userId)
         {
-            var currentUserId = 1; //temp
-            var result = Service.RegisterUser(dto, currentUserId);
-            return Ok(result);
+            try
+            {
+                var result = Service.RegisterUser(dto, userId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("login")]
@@ -54,8 +60,15 @@ namespace LibraryManagementSystem.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var result = Service.GetAllUsers();
-            return Ok(result);
+            try
+            {
+                var result = Service.GetAllUsers();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

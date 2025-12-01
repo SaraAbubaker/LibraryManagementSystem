@@ -1,4 +1,5 @@
 ﻿using LibraryManagementSystem.DTOs.BorrowRecord;
+using LibraryManagementSystem.Entities;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,36 +19,58 @@ namespace LibraryManagementSystem.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            var result = Service.GetBorrowDetails();
-            return Ok(result);
+            try
+            {
+                var result = Service.GetBorrowDetails();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("borrow")]
-        public IActionResult Borrow(RequestBorrowDto dto)
+        public IActionResult BorrowBook(RequestBorrowDto dto, [FromQuery] int userId)
         {
-            // In the future, replace 1 with authenticated user ID
-            var borrow = Service.BorrowBook(dto);
-            return Ok(borrow);
+            try
+            {
+                var borrow = Service.BorrowBook(dto, userId);
+                return Ok(borrow);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("return/{id}")]
-        public IActionResult ReturnBook(int id)
+        public IActionResult ReturnBook(int id, [FromQuery] int userId)
         {
-            var currentUserId = 1; //temp
-
-            var success = Service.ReturnBook(id, currentUserId);
-
-            if (!success)
-                return BadRequest("Borrow record not found or already returned.");
-
-            return Ok("Book returned successfully.");
+            try
+            {
+                var result = Service.GetBorrowDetails();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("overdue")]
         public IActionResult GetOverdue()
         {
-            var result = Service.GetOverdueRecords();
-            return Ok(result);
+            try
+            {
+                var result = Service.GetOverdueRecords();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
         }
     }
 }

@@ -66,17 +66,17 @@ namespace LibraryManagementSystem.Services
         }
 
         //Borrow & Return
-        public BorrowRecord BorrowBook(RequestBorrowDto dto)
+        public BorrowRecord BorrowBook(RequestBorrowDto dto, int userId)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.Positive(dto.InventoryRecordId, nameof(dto.InventoryRecordId));
-            Validate.Positive(dto.UserId, nameof(dto.UserId));
+            Validate.Positive(userId, nameof(userId));
 
             var borrow = new BorrowRecord
             {
                 Id = nextBorrowRecordId++,
                 InventoryRecordId = dto.InventoryRecordId,
-                UserId = dto.UserId,
+                UserId = userId,
                 BorrowDate = DateOnly.FromDateTime(DateTime.Now),
                 DueDate = dto.DueDate ?? DateOnly.FromDateTime(DateTime.Now.AddDays(14)),
                 ReturnDate = null
