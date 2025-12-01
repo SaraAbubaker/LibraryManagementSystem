@@ -8,10 +8,10 @@ namespace LibraryManagementSystem.Entities
     public class BorrowRecord : AuditBase
     {
         [Required]
-        public DateTime BorrowDate { get; set; }
+        public DateOnly BorrowDate { get; set; }
         [Required]
-        public DateTime DueDate { get; set; }
-        public DateTime? ReturnDate { get; set; } //nullable
+        public DateOnly DueDate { get; set; }
+        public DateOnly? ReturnDate { get; set; } //nullable
 
         //Foreign keys
         public int InventoryRecordId { get; set; }

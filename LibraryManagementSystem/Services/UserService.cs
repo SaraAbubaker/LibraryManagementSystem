@@ -1,5 +1,7 @@
 ﻿using LibraryManagementSystem.DTOs.User;
 using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Exceptions;
+using LibraryManagementSystem.Helpers;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -18,7 +20,10 @@ namespace LibraryManagementSystem.Services
 
         public UserDto RegisterUser(RegisterUserDto dto, int? createdByUserId = null)
         {
-            if (dto == null) throw new ArgumentNullException(nameof(dto));
+            Validate.NotNull(dto, nameof(dto));
+            Validate.NotEmpty(dto.Username, "Username");
+            Validate.NotEmpty(dto.Email, "Email");
+            Validate.NotEmpty(dto.Password, "Password");
 
             var usernameNormalized = dto.Username.Trim();
             var emailNormalized = dto.Email.Trim().ToLowerInvariant();
@@ -38,7 +43,7 @@ namespace LibraryManagementSystem.Services
             user.BorrowRecords = user.BorrowRecords ?? new List<BorrowRecord>();
 
             user.CreatedByUserId = createdByUserId;
-            user.CreatedDate = DateTime.Now;
+            user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
             Store.Users.Add(user);
 
@@ -54,6 +59,10 @@ namespace LibraryManagementSystem.Services
 
         public UserDto LoginUser(LoginDto dto)
         {
+            Validate.NotNull(dto, nameof(dto));
+            Validate.NotEmpty(dto.UsernameOrEmail, "UsernameOrEmail");
+            Validate.NotEmpty(dto.Password, "Password");
+
             var input = dto.UsernameOrEmail.Trim().ToLower();
             var password = dto.Password.Trim();
 
@@ -61,11 +70,8 @@ namespace LibraryManagementSystem.Services
                 u.Username.ToLower() == input ||
                 u.Email.ToLower() == input);
 
-            if (user == null)
-                throw new Exception("Invalid username/email or password.");
-
-            if (user.Password != password)
-                throw new Exception("Invalid username/email or password.");
+            if (user == null || user.Password != password)
+                throw new BadRequestException("Invalid username/email or password.");
 
             var result = user.Adapt<UserDto>();
             result.BorrowedBooksCount = user.BorrowRecords.Count;
@@ -75,9 +81,11 @@ namespace LibraryManagementSystem.Services
 
         public UserDto GetUserById(int id)
         {
+            Validate.Positive(id, "id");
+
             var user = Store.Users.FirstOrDefault(u => u.Id == id);
             if (user == null)
-                throw new KeyNotFoundException($"User with id {id} not found.");
+                throw new NotFoundException($"User with id {id} not found.");
 
             var dto = user.Adapt<UserDto>();
 

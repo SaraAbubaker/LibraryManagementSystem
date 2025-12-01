@@ -14,6 +14,6 @@ namespace LibraryManagementSystem.DTOs.BorrowRecord
         public int UserId { get; set; }
 
         //User picks 
-        public DateTime? DueDate { get; set; }
+        public DateOnly? DueDate { get; set; }
     }
 }

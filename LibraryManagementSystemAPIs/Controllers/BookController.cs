@@ -20,67 +20,102 @@ namespace LibraryManagementSystemAPIs.Controllers
         [HttpGet("{id}")]
         public IActionResult GetDetails(int id)
         {
-            var result = Service.GetBookDetails(id);
-            if (result == null)
-                return NotFound();
-
-            return Ok(result);
+            try
+            {
+                var result = Service.GetBookDetails(id);
+                if (result == null) return NotFound();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("author/{authorId}")]
         public IActionResult GetByAuthor(int authorId)
         {
-            var result = Service.GetBooksByAuthor(authorId);
-            return Ok(result);
+            try
+            {
+                var result = Service.GetBooksByAuthor(authorId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
+
         [HttpGet("category/{categoryId}")]
         public IActionResult GetByCategory(int categoryId)
         {
-            var result = Service.GetBooksByCategory(categoryId);
-            return Ok(result);
+            try
+            {
+                var result = Service.GetBooksByCategory(categoryId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost]
-        public IActionResult Create(CreateBookDto dto)
+        public IActionResult Create(CreateBookDto dto, [FromQuery] int userId)
         {
-            int currentUserId = 1; //temp
-
-            var result = Service.CreateBook(dto, currentUserId);
-
-            return CreatedAtAction(nameof(GetDetails), new { id = result.Id }, result);
+            try
+            {
+                var result = Service.CreateBook(dto, userId);
+                return CreatedAtAction(nameof(GetDetails), new { id = result.Id }, result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut]
-        public IActionResult Update(UpdateBookDto dto)
+        public IActionResult Update(UpdateBookDto dto, [FromQuery] int userId)
         {
-            int currentUserId = 1; //temp
-
-            var success = Service.UpdateBook(dto, currentUserId);
-
-            if (!success)
-                return NotFound();
-
-            return NoContent();
+            try
+            {
+                var success = Service.UpdateBook(dto, userId);
+                if (!success) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPut("delete {id}")]
-        public IActionResult Archive(int id)
+        [HttpPut("archive {id}")]
+        public IActionResult Archive(int id, [FromQuery] int userId)
         {
-            int currentUserId = 1; //temp
-
-            var success = Service.ArchiveBook(id, currentUserId);
-
-            if (!success)
-                return NotFound();
-
-            return NoContent();
+            try
+            {
+                var success = Service.ArchiveBook(id, userId);
+                if (!success) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("search")]
         public IActionResult Search([FromQuery] SearchBookParamsDto dto)
         {
-            var result = Service.SearchBooks(dto);
-            return Ok(result);
+            try
+            {
+                var result = Service.SearchBooks(dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

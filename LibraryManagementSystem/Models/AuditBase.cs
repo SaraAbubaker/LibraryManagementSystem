@@ -9,11 +9,11 @@ namespace LibraryManagementSystem.Entities
     {
         public int Id { get; set; }
         public int? CreatedByUserId { get; set; } //nullable
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public DateOnly CreatedDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
         public int? LastModifiedByUserId { get; set; } //nullable
-        public DateTime? LastModifiedDate { get; set; } //nullable
+        public DateOnly? LastModifiedDate { get; set; } //nullable
         public bool IsArchived { get; set; } = false;
         public int? ArchivedByUserId { get; set; }
-        public DateTime? ArchivedDate { get; set; }
+        public DateOnly? ArchivedDate { get; set; }
     }
 }

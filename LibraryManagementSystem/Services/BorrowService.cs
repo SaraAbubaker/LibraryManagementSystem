@@ -1,10 +1,12 @@
-﻿using LibraryManagementSystem.Entities;
+﻿using LibraryManagementSystem.DTOs.BorrowRecord;
+using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Exceptions;
+using LibraryManagementSystem.Helpers;
+using Mapster;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Linq;
-using Mapster;
-using LibraryManagementSystem.DTOs.BorrowRecord;
+using System.Text;
 
 namespace LibraryManagementSystem.Services
 {
@@ -64,37 +66,46 @@ namespace LibraryManagementSystem.Services
         }
 
         //Borrow & Return
-        public BorrowRecord BorrowBook(RequestBorrowDto dto)
+        public BorrowRecord BorrowBook(RequestBorrowDto dto, int userId)
         {
+            Validate.NotNull(dto, nameof(dto));
+            Validate.Positive(dto.InventoryRecordId, nameof(dto.InventoryRecordId));
+            Validate.Positive(userId, nameof(userId));
+
             var borrow = new BorrowRecord
             {
                 Id = nextBorrowRecordId++,
                 InventoryRecordId = dto.InventoryRecordId,
-                UserId = dto.UserId,
-                BorrowDate = DateTime.Now,
-                DueDate = dto.DueDate ?? DateTime.Now.AddDays(14),
+                UserId = userId,
+                BorrowDate = DateOnly.FromDateTime(DateTime.Now),
+                DueDate = dto.DueDate ?? DateOnly.FromDateTime(DateTime.Now.AddDays(14)),
                 ReturnDate = null
             };
 
             BorrowRecords.Add(borrow);
 
-            var copy = Store.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId);
-            if (copy != null)
-                copy.IsAvailable = false;
+            if (Store.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId) is not InventoryRecord copy)
+                throw new NotFoundException($"Inventory record with id {dto.InventoryRecordId} not found.");
+
+            copy.IsAvailable = false;
 
             return borrow;
         }
 
         public bool ReturnBook(int borrowRecordId, int currentUserId)
         {
-            var record = Store.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId);
-            if (record == null || record.ReturnDate != null)
-                return false;
+            Validate.Positive(borrowRecordId, nameof(borrowRecordId));
+            Validate.Positive(currentUserId, nameof(currentUserId));
+
+            if (Store.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId) is not BorrowRecord record)
+                throw new NotFoundException($"Borrow record with id {borrowRecordId} not found.");
+            if (record.ReturnDate != null)
+                throw new ConflictException($"Borrow record with id {borrowRecordId} has already been returned.");
 
             //Borrow Record update
-            record.ReturnDate = DateTime.Now;
+            record.ReturnDate = DateOnly.FromDateTime(DateTime.Now);
             record.LastModifiedByUserId = currentUserId;
-            record.LastModifiedDate = DateTime.Now;
+            record.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             //Inventory Record update
             var success = Inventory.ReturnCopy(record.InventoryRecordId, currentUserId);
@@ -106,9 +117,11 @@ namespace LibraryManagementSystem.Services
         //Overdue Logic
         public List<BorrowRecord> GetOverdueRecords()
         {
-            var now = DateTime.Now;
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
             return Store.BorrowRecords
-                .Where(r => r.ReturnDate == null && r.DueDate < now)
+                .Where(r => r.ReturnDate == null &&
+                            r.DueDate < today)
                 .ToList();
         }
 
@@ -117,19 +130,20 @@ namespace LibraryManagementSystem.Services
             if (record.ReturnDate != null)
                 return false;
 
-            return DateTime.Now > record.DueDate;
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            return today > record.DueDate;
         }
 
         public int CalculateOverdueDays(BorrowRecord record)
         {
-            // If returned show return date otherwise show today
-            var endDate = record.ReturnDate ?? DateTime.Now;
+            var endDate = record.ReturnDate ?? DateOnly.FromDateTime(DateTime.Today);
+            var dueDate = record.DueDate;
 
-            //not overdue = 0
-            if (endDate <= record.DueDate)
-                return 0;
+            //if not overdue, return 0
+            if (endDate <= dueDate) return 0;
 
-            return (endDate - record.DueDate).Days;
+            var days = (endDate.ToDateTime(TimeOnly.MinValue) - dueDate.ToDateTime(TimeOnly.MinValue)).Days;
+            return Math.Max(0, days);
         }
 
     }

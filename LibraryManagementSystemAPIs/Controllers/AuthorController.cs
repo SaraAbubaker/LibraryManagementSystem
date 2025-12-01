@@ -18,34 +18,61 @@ namespace LibraryManagementSystemAPIs.Controllers
         [HttpGet]
         public IActionResult ListAuthors()
         {
-            var result = Service.ListAuthors();
-            return Ok(result);
+            try 
+            { 
+                var result = Service.ListAuthors();
+                return Ok(result);
+            } 
+            catch (Exception ex) 
+            {
+                return BadRequest(ex.Message); 
+            }
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(AuthorListDto), 201)]
+        [ProducesResponseType(400)]
         public IActionResult CreateAuthor(CreateAuthorDto dto)
         {
-            var result = Service.CreateAuthor(dto);
-            return CreatedAtAction(nameof(ListAuthors), result);
+            try 
+            { 
+                var result = Service.CreateAuthor(dto);
+                return CreatedAtAction(nameof(ListAuthors), result);
+            } 
+            catch (Exception ex) 
+            { 
+                return BadRequest(ex.Message); 
+            }
         }
 
         [HttpPut]
         public IActionResult EditAuthor(UpdateAuthorDto dto)
         {
-            var success = Service.EditAuthor(dto);
-            if (!success) return NotFound();
-            return NoContent();
+            try 
+            { 
+                var success = Service.EditAuthor(dto);
+                if (!success) return NotFound();
+                return NoContent();
+            } 
+            catch (Exception ex) 
+            { 
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPut("delete {id}")]
-        public IActionResult ArchiveAuthor(int id)
+        [HttpPut("archive {id}")]
+        public IActionResult ArchiveAuthor(int id, [FromQuery] int userId)
         {
-            int currentUserId = 1;
-
-            var success = Service.ArchiveAuthor(id, currentUserId);
-            if (!success) return NotFound();
-
-            return NoContent();
+            try
+            {
+                var success = Service.ArchiveAuthor(id, userId);
+                if (!success) return NotFound();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
