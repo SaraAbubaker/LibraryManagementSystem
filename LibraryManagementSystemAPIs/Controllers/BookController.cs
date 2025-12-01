@@ -63,7 +63,7 @@ namespace LibraryManagementSystemAPIs.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
+        [HttpPut("delete {id}")]
         public IActionResult Archive(int id)
         {
             int currentUserId = 1; //temp

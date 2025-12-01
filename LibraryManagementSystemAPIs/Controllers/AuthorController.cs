@@ -37,7 +37,7 @@ namespace LibraryManagementSystemAPIs.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
+        [HttpPut("delete {id}")]
         public IActionResult ArchiveAuthor(int id)
         {
             int currentUserId = 1;

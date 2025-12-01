@@ -38,7 +38,7 @@ namespace LibraryManagementSystem.Controllers
             return Ok(record);
         }
 
-        [HttpDelete("{id}")]
+        [HttpPut("delete {id}")]
         public IActionResult RemoveCopy(int id)
         {
             var currentUserId = 1; //temp

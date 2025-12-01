@@ -42,7 +42,7 @@ namespace LibraryManagementSystem.Controllers
             return Ok(updated);
         }
 
-        [HttpDelete("{id}")]
+        [HttpPut("delete {id}")]
         public IActionResult Archive(int id)
         {
             var currentUserId = 1; //temp
