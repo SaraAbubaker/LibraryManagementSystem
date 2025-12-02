@@ -1,5 +1,5 @@
 ﻿using LibraryManagementSystem.DTOs.Book;
-using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,9 +22,9 @@ namespace LibraryManagementSystemAPIs.Controllers
         {
             try
             {
-                var result = Service.GetBookDetails(id);
-                if (result == null) return NotFound();
-                return Ok(result);
+                var book = Service.GetBookDetails(id);
+                if (book == null) return NotFound();
+                return Ok(book);
             }
             catch (Exception ex)
             {
@@ -37,8 +37,8 @@ namespace LibraryManagementSystemAPIs.Controllers
         {
             try
             {
-                var result = Service.GetBooksByAuthor(authorId);
-                return Ok(result);
+                var book = Service.GetBooksByAuthor(authorId);
+                return Ok(book);
             }
             catch (Exception ex)
             {
@@ -51,8 +51,8 @@ namespace LibraryManagementSystemAPIs.Controllers
         {
             try
             {
-                var result = Service.GetBooksByCategory(categoryId);
-                return Ok(result);
+                var book = Service.GetBooksByCategory(categoryId);
+                return Ok(book);
             }
             catch (Exception ex)
             {
@@ -65,8 +65,8 @@ namespace LibraryManagementSystemAPIs.Controllers
         {
             try
             {
-                var result = Service.CreateBook(dto, userId);
-                return CreatedAtAction(nameof(GetDetails), new { id = result.Id }, result);
+                var book = Service.CreateBook(dto, userId);
+                return CreatedAtAction(nameof(GetDetails), new { id = book.Id }, book);
             }
             catch (Exception ex)
             {
@@ -74,11 +74,13 @@ namespace LibraryManagementSystemAPIs.Controllers
             }
         }
 
-        [HttpPut]
-        public IActionResult Update(UpdateBookDto dto, [FromQuery] int userId)
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, UpdateBookDto dto, [FromQuery] int userId)
         {
             try
             {
+                if (id != dto.Id) return BadRequest("ID mismatch.");
+
                 var success = Service.UpdateBook(dto, userId);
                 if (!success) return NotFound();
                 return NoContent();
@@ -109,8 +111,8 @@ namespace LibraryManagementSystemAPIs.Controllers
         {
             try
             {
-                var result = Service.SearchBooks(dto);
-                return Ok(result);
+                var book = Service.SearchBooks(dto);
+                return Ok(book);
             }
             catch (Exception ex)
             {

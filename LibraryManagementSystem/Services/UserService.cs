@@ -36,6 +36,9 @@ namespace LibraryManagementSystem.Services
             if (_context.Users.Any(u => u.Email == emailInput))
                 throw new InvalidOperationException("Email already registered.");
 
+            var userType = _context.UserTypes.FirstOrDefault(ut => ut.Id == dto.UserTypeId);
+            Validate.Exists(userType, $"UserType with id {dto.UserTypeId}");
+
             var user = dto.Adapt<User>();
 
             user.Username = usernameNormalized;
@@ -49,6 +52,8 @@ namespace LibraryManagementSystem.Services
             _context.SaveChanges();
 
             var outDto = user.Adapt<UserDto>();
+            outDto.UserTypeId = user.UserTypeId;
+            outDto.UserRole = userType!.Role;
             outDto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
             outDto.CreatedByUserId = user.CreatedByUserId;
             outDto.CreatedDate = user.CreatedDate;
@@ -89,15 +94,14 @@ namespace LibraryManagementSystem.Services
 
             var user = _context.Users
                 .Include(u => u.BorrowRecords)
+                .Include(u => u.UserType)
                 .FirstOrDefault(u => u.Id == id);
 
             Validate.Exists(user, $"User with id {id}");
 
             var dto = user.Adapt<UserDto>();
-
-            dto.BorrowedBooksCount = user!.BorrowRecords?.Count ?? 0;
-            dto.CreatedByUserId = user.CreatedByUserId;
-            dto.LastModifiedByUserId = user.LastModifiedByUserId;
+            dto.UserRole = user!.UserType!.Role;
+            dto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
 
             return dto;
         }
@@ -105,17 +109,19 @@ namespace LibraryManagementSystem.Services
         public List<UserDto> GetAllUsers()
         {
             var users = _context.Users
-                .Include(u => u.BorrowRecords)
-                .ProjectToType<UserDto>() //Mapping
-                .ToList();
+            .Include(u => u.BorrowRecords)
+            .Include(u => u.UserType)
+            .ToList();
 
-            foreach (var dto in users)
+            var dtos = users.Adapt<List<UserDto>>();
+
+            for (int i = 0; i < dtos.Count; i++)
             {
-                dto.BorrowedBooksCount = _context.BorrowRecords
-                    .Count(r => r.UserId == dto.Id);
+                dtos[i].BorrowedBooksCount = users[i].BorrowRecords.Count;
+                dtos[i].UserRole = users[i].UserType?.Role ?? "Unknown";
             }
 
-            return users;
+            return dtos;
         }
     }
 }
