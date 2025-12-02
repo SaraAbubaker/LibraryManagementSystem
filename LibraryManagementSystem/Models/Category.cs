@@ -9,6 +9,7 @@ namespace LibraryManagementSystem.Models
     public class Category : AuditBase
     {
         [Required]
+        [StringLength(100, MinimumLength = 1)]
         public string Name { get; set; } = null!;
 
         //many books = 1 category

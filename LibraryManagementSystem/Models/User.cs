@@ -24,6 +24,11 @@ namespace LibraryManagementSystem.Models
             ErrorMessage = "Password must be at least 8 characters, contain upper, lower case, and a number.")]
         public string Password { get; set; } = null!;
 
+        //Foreign Key
+        public int UserTypeId { get; set; }
+
+        //Navigation Property
+        public UserType? UserType { get; set; }
 
         public List<BorrowRecord> BorrowRecords { get; set; } = new();
     }
