@@ -71,6 +71,11 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(dto.InventoryRecordId, nameof(dto.InventoryRecordId));
             Validate.Positive(userId, nameof(userId));
 
+            var copy = _context.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId);
+            Validate.Exists(copy, $"Inventory record with id {dto.InventoryRecordId}");
+
+            copy!.IsAvailable = false;
+
             var borrow = new BorrowRecord
             {
                 Id = nextBorrowRecordId++,
@@ -83,11 +88,6 @@ namespace LibraryManagementSystem.Services
 
             _context.BorrowRecords.Add(borrow);
 
-            if (_context.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId) is not InventoryRecord copy)
-                throw new NotFoundException($"Inventory record with id {dto.InventoryRecordId} not found.");
-
-            copy.IsAvailable = false;
-
             return borrow;
         }
 
@@ -96,22 +96,23 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(borrowRecordId, nameof(borrowRecordId));
             Validate.Positive(currentUserId, nameof(currentUserId));
 
-            if (_context.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId) is not BorrowRecord record)
-                throw new NotFoundException($"Borrow record with id {borrowRecordId} not found.");
-            if (record.ReturnDate != null)
+            var record = _context.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId);
+            Validate.Exists(record, $"Borrow record with id {borrowRecordId}");
+
+            if (record!.ReturnDate != null)
                 throw new ConflictException($"Borrow record with id {borrowRecordId} has already been returned.");
 
-            //Borrow Record update
             record.ReturnDate = DateOnly.FromDateTime(DateTime.Now);
             record.LastModifiedByUserId = currentUserId;
             record.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            //Inventory Record update
             var success = Inventory.ReturnCopy(record.InventoryRecordId, currentUserId);
 
-            //true if both updates worked
+            _context.SaveChanges();
+
             return success;
         }
+
 
         //Overdue Logic
         public List<BorrowRecord> GetOverdueRecords()
@@ -119,15 +120,15 @@ namespace LibraryManagementSystem.Services
             var today = DateOnly.FromDateTime(DateTime.Now);
 
             return _context.BorrowRecords
-                .Where(r => r.ReturnDate == null &&
-                            r.DueDate < today)
+                .Where(r => r.ReturnDate == null && r.DueDate < today)
                 .ToList();
         }
 
         public bool IsBorrowOverdue(BorrowRecord record)
         {
-            if (record.ReturnDate != null)
-                return false;
+            Validate.Exists(record, nameof(record));
+
+            if (record.ReturnDate != null) return false;
 
             var today = DateOnly.FromDateTime(DateTime.Now);
             return today > record.DueDate;
@@ -135,15 +136,15 @@ namespace LibraryManagementSystem.Services
 
         public int CalculateOverdueDays(BorrowRecord record)
         {
+            Validate.Exists(record, nameof(record));
+
             var endDate = record.ReturnDate ?? DateOnly.FromDateTime(DateTime.Today);
             var dueDate = record.DueDate;
 
-            //if not overdue, return 0
             if (endDate <= dueDate) return 0;
 
             var days = (endDate.ToDateTime(TimeOnly.MinValue) - dueDate.ToDateTime(TimeOnly.MinValue)).Days;
             return Math.Max(0, days);
         }
-
     }
 }

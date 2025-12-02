@@ -14,8 +14,14 @@ namespace LibraryManagementSystem.Models
             ErrorMessage = "Copy code must follow format BC-01.")]
         public string CopyCode { get; set; } = null!;
 
-        public int BookId { get; set; } //Foreign Key
+        //Foreign Key
+        public int BookId { get; set; } 
+        public int PublisherId { get; set; }
+
+        //Navigation
+        public Publisher? Publisher { get; set; }
         public Book? Book { get; set; }
 
+        public List<BorrowRecord> BorrowRecords { get; set; } = new();
     }
 }

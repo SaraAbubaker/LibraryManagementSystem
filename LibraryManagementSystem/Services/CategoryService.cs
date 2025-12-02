@@ -28,9 +28,8 @@ namespace LibraryManagementSystem.Services
 
             var category = dto.Adapt<Category>();
 
-            category.Id = _context.Categories.Count() + 1;
-
             _context.Categories.Add(category);
+            _context.SaveChanges();
 
             return category.Adapt<CategoryDto>();
         }
@@ -43,18 +42,20 @@ namespace LibraryManagementSystem.Services
                 .ToList();
         }
 
-        public CategoryDto? UpdateCategory(UpdateCategoryDto dto, int UserId)
+        public CategoryDto UpdateCategory(UpdateCategoryDto dto, int userId)
         {
             Validate.NotNull(dto, nameof(dto));
+            Validate.NotEmpty(dto.Name, "Category name");
             Validate.Positive(dto.Id, "Id");
 
-            if (_context.Categories.FirstOrDefault(c => c.Id == dto.Id) is not Category category)
-                throw new NotFoundException($"Category with id {dto.Id} not found.");
+            var category = _context.Categories.FirstOrDefault(c => c.Id == dto.Id);
+            Validate.Exists(category, $"Category with id {dto.Id}");
 
-            category.Name = dto.Name;
-
+            category!.Name = dto.Name;
             category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-            category.LastModifiedByUserId = UserId;
+            category.LastModifiedByUserId = userId;
+
+            _context.SaveChanges();
 
             return category.Adapt<CategoryDto>();
         }
@@ -64,9 +65,10 @@ namespace LibraryManagementSystem.Services
         {
             Validate.Positive(id, "id");
 
-            if (_context.Categories.FirstOrDefault(c => c.Id == id) is not Category category)
-                throw new NotFoundException($"Category with id {id} not found.");
-            if (category.IsArchived)
+            var category = _context.Categories.FirstOrDefault(c => c.Id == id);
+            Validate.Exists(category, $"Category with id {id}");
+
+            if (category!.IsArchived)
                 throw new ConflictException($"Category with id {id} is already archived.");
 
             foreach (var book in _context.Books.Where(b => b.CategoryId == id))
@@ -79,8 +81,9 @@ namespace LibraryManagementSystem.Services
             category.ArchivedByUserId = archivedByUserId;
             category.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
+            _context.SaveChanges();
+
             return true;
         }
-
     }
 }

@@ -4,6 +4,7 @@ using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
 using LibraryManagementSystem.Models;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -27,26 +28,25 @@ namespace LibraryManagementSystem.Services
             Validate.NotEmpty(dto.Password, "Password");
 
             var usernameNormalized = dto.Username.Trim();
-            var emailNormalized = dto.Email.Trim().ToLowerInvariant();
+            var emailInput = dto.Email.Trim();
 
             if (_context.Users.Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Username already taken.");
 
-            if (_context.Users.Any(u => string.Equals(u.Email, emailNormalized, StringComparison.OrdinalIgnoreCase)))
+            if (_context.Users.Any(u => u.Email == emailInput))
                 throw new InvalidOperationException("Email already registered.");
 
             var user = dto.Adapt<User>();
 
             user.Username = usernameNormalized;
-            user.Email = emailNormalized;
-            user.Id = _context.Users.Count() + 1;
-
+            user.Email = emailInput;
             user.BorrowRecords = user.BorrowRecords ?? new List<BorrowRecord>();
 
             user.CreatedByUserId = createdByUserId;
             user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
             _context.Users.Add(user);
+            _context.SaveChanges();
 
             var outDto = user.Adapt<UserDto>();
             outDto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
@@ -64,12 +64,15 @@ namespace LibraryManagementSystem.Services
             Validate.NotEmpty(dto.UsernameOrEmail, "UsernameOrEmail");
             Validate.NotEmpty(dto.Password, "Password");
 
-            var input = dto.UsernameOrEmail.Trim().ToLower();
+            var input = dto.UsernameOrEmail.Trim();
             var password = dto.Password.Trim();
 
-            var user = _context.Users.FirstOrDefault(u =>
-                u.Username.ToLower() == input ||
-                u.Email.ToLower() == input);
+            var user = _context.Users
+                .Include(u => u.BorrowRecords)
+                .FirstOrDefault(u =>
+                    string.Equals(u.Username, input, StringComparison.OrdinalIgnoreCase) 
+                    || u.Email == input
+                );
 
             if (user == null || user.Password != password)
                 throw new BadRequestException("Invalid username/email or password.");
@@ -84,13 +87,15 @@ namespace LibraryManagementSystem.Services
         {
             Validate.Positive(id, "id");
 
-            var user = _context.Users.FirstOrDefault(u => u.Id == id);
-            if (user == null)
-                throw new NotFoundException($"User with id {id} not found.");
+            var user = _context.Users
+                .Include(u => u.BorrowRecords)
+                .FirstOrDefault(u => u.Id == id);
+
+            Validate.Exists(user, $"User with id {id}");
 
             var dto = user.Adapt<UserDto>();
 
-            dto.BorrowedBooksCount = user.BorrowRecords.Count;
+            dto.BorrowedBooksCount = user!.BorrowRecords?.Count ?? 0;
             dto.CreatedByUserId = user.CreatedByUserId;
             dto.LastModifiedByUserId = user.LastModifiedByUserId;
 
@@ -99,9 +104,18 @@ namespace LibraryManagementSystem.Services
 
         public List<UserDto> GetAllUsers()
         {
-            return _context.Users
-                .Select(u => u.Adapt<UserDto>())
+            var users = _context.Users
+                .Include(u => u.BorrowRecords)
+                .ProjectToType<UserDto>() //Mapping
                 .ToList();
+
+            foreach (var dto in users)
+            {
+                dto.BorrowedBooksCount = _context.BorrowRecords
+                    .Count(r => r.UserId == dto.Id);
+            }
+
+            return users;
         }
     }
 }

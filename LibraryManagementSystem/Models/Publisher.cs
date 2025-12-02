@@ -8,7 +8,8 @@ namespace LibraryManagementSystem.Models
     public class Publisher : AuditBase
     {
         [Required]
-        [StringLength(200)]
+        [StringLength(200, MinimumLength = 1)]
         public string Name { get; set; } = null!;
+        public List<InventoryRecord> InventoryRecords { get; set; } = new();
     }
 }
