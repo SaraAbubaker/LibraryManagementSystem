@@ -1,5 +1,5 @@
 ﻿using LibraryManagementSystem.DTOs.BorrowRecord;
-using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
 

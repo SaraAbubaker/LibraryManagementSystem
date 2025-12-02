@@ -64,6 +64,13 @@ namespace LibraryManagementSystem.Services
                 .ToList();
         }
 
+        public AuthorListDto? GetAuthorById(int id)
+        {
+            var author = _context.Authors
+                .FirstOrDefault(a => a.Id == id && !a.IsArchived);
+            return author?.Adapt<AuthorListDto>();
+        }
+
         public bool EditAuthor(UpdateAuthorDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
