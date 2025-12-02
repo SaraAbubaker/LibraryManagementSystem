@@ -25,7 +25,7 @@ namespace LibraryManagementSystem.Data
 
             #region Relationships
 
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = DateOnly.FromDateTime(DateTime.Now);
 
             // - Book relationships -
             //Book -> Category (many Books have one Category)
