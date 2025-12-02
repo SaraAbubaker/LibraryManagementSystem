@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LibraryManagementSystem.Entities
+namespace LibraryManagementSystem.Models
 {
     //Base Parent Class
     public abstract class AuditBase

@@ -9,9 +9,10 @@ namespace LibraryManagementSystem.DTOs.Book
         public string? Title { get; set; }
         public DateOnly? PublishDate { get; set; }
         public string? Version { get; set; }
+
         public int? AuthorId { get; set; }
         public int? CategoryId { get; set; }
-        public string? Publisher { get; set; }
+        public int? PublisherId { get; set; }
         public bool? IsAvailable { get; set; }
     }
 }

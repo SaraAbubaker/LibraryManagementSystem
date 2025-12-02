@@ -1,24 +1,23 @@
-﻿using LibraryManagementSystem.DTOs.Author;
-using LibraryManagementSystem.DTOs.Book;
-using LibraryManagementSystem.Entities;
+﻿using LibraryManagementSystem.Data;
+using LibraryManagementSystem.DTOs.Author;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
+using LibraryManagementSystem.Models;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
 
 namespace LibraryManagementSystem.Services
 {
     public class AuthorService
     {
-        private readonly LibraryDataStore Store;
-        //Injection
-        public AuthorService(LibraryDataStore store)
+        private readonly LibraryContext _context;
+
+        public AuthorService(LibraryContext context)
         {
-            Store = store;
+            _context = context;
         }
 
         //CRUD
@@ -29,30 +28,33 @@ namespace LibraryManagementSystem.Services
 
             var author = new Author
             {
-                Id = Store.Authors.Any() ? Store.Authors.Max(a => a.Id) + 1 : 1,
                 Name = dto.Name,
                 Email = dto.Email
             };
 
-            Store.Authors.Add(author);
+            _context.Authors.Add(author);
+            _context.SaveChanges();
 
             var result = author.Adapt<AuthorListDto>();
-            result.BookCount = Store.Books.Count(b => b.AuthorId == author.Id);
+
+            result.BookCount = _context.Books.Count(b => b.AuthorId == author.Id);
 
             return result;
         }
 
         public List<AuthorListDto> ListAuthors()
         {
-            var bookCounts = Store.Books
+            var bookCounts = _context.Books
                 .Where(b => !b.IsArchived)
                 .GroupBy(b => b.AuthorId)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            var authors = Store.Authors.Where(a => !a.IsArchived);
+            var authors = _context.Authors
+                .Where(a => !a.IsArchived)
+                .OrderBy(a => a.Name)
+                .ToList();
 
             return authors
-                .OrderBy(a => a.Name)
                 .Select(a =>
                 {
                     var dto = a.Adapt<AuthorListDto>();
@@ -68,12 +70,13 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(dto.Id, "Id");
             Validate.NotEmpty(dto.Name, "Author name");
 
-            var author = Store.Authors.FirstOrDefault(a => a.Id == dto.Id && !a.IsArchived);
+            var author = _context.Authors.FirstOrDefault(a => a.Id == dto.Id && !a.IsArchived);
             Validate.Exists(author, $"Author with id {dto.Id}");
 
             author!.Name = dto.Name;
             author.Email = dto.Email;
 
+            _context.SaveChanges();
             return true;
         }
 
@@ -82,26 +85,26 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(id, "Id");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            var author = Store.Authors.FirstOrDefault(a => a.Id == id);
+            var author = _context.Authors.FirstOrDefault(a => a.Id == id);
             Validate.Exists(author, $"Author with id {id}");
 
             if (author!.IsArchived)
                 throw new ConflictException($"Author with id {id} is already archived.");
 
-            foreach (var book in Store.Books.Where(b => b.AuthorId == id))
+            var books = _context.Books.Where(b => b.AuthorId == id).ToList();
+            foreach (var book in books)
             {
                 book.AuthorId = 0; // Unknown Author
             }
 
             author.Name = "Unknown";
             author.Email = string.Empty;
-
             author.IsArchived = true;
-            author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
+            author.ArchivedDate = DateOnly.FromDateTime(DateTime.UtcNow);
             author.ArchivedByUserId = performedByUserId;
 
+            _context.SaveChanges();
             return true;
         }
-
     }
 }

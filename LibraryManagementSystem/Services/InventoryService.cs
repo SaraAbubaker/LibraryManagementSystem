@@ -1,6 +1,7 @@
-﻿using LibraryManagementSystem.Entities;
+﻿using LibraryManagementSystem.Data;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
+using LibraryManagementSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +11,12 @@ namespace LibraryManagementSystem.Services
 {
     public class InventoryService
     {
-        private readonly LibraryDataStore Store;
+        private readonly LibraryContext _context;
         private readonly BookService BookService;
 
-        public InventoryService(LibraryDataStore store, BookService bookService)
+        public InventoryService(LibraryContext context, BookService bookService)
         {
-            Store = store;
+            _context = context;
             BookService = bookService;
         }
 
@@ -25,7 +26,7 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(inventoryRecordId, "inventoryRecordId");
             Validate.Positive(currentUserId, "currentUserId");
 
-            var copy = Store.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
+            var copy = _context.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
             Validate.Exists(copy, $"Inventory record with id {inventoryRecordId}");
 
             copy!.IsAvailable = true;
@@ -41,7 +42,7 @@ namespace LibraryManagementSystem.Services
             Validate.NotEmpty(copyCode, "copyCode");
             Validate.Positive(createdByUserId, "createdByUserId");
 
-            var nextId = Store.InventoryRecords.Any() ? Store.InventoryRecords.Max(r => r.Id) + 1 : 1;
+            var nextId = _context.InventoryRecords.Any() ? _context.InventoryRecords.Max(r => r.Id) + 1 : 1;
 
             var record = new InventoryRecord
             {
@@ -53,7 +54,7 @@ namespace LibraryManagementSystem.Services
                 CreatedDate = DateOnly.FromDateTime(DateTime.UtcNow)
             };
 
-            Store.InventoryRecords.Add(record);
+            _context.InventoryRecords.Add(record);
             return record;
         }
 
@@ -62,17 +63,17 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(inventoryRecordId, "inventoryRecordId");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            var copy = Store.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
+            var copy = _context.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
             Validate.Exists(copy, $"Inventory record with id {inventoryRecordId}");
 
             if (!copy!.IsAvailable)
                 throw new ConflictException("Cannot remove a copy that is currently borrowed.");
 
             var bookId = copy.BookId;
-            Store.InventoryRecords.Remove(copy);
+            _context.InventoryRecords.Remove(copy);
 
             //If no more copies exist, archive the book
-            var anyLeft = Store.InventoryRecords.Any(r => r.BookId == bookId);
+            var anyLeft = _context.InventoryRecords.Any(r => r.BookId == bookId);
             if (!anyLeft)
             {
                 BookService.ArchiveBook(bookId, performedByUserId);
@@ -83,7 +84,7 @@ namespace LibraryManagementSystem.Services
 
         public List<InventoryRecord> ListCopiesForBook(int bookId)
         {
-            return Store.InventoryRecords
+            return _context.InventoryRecords
                 .Where(r => r.BookId == bookId)
                 .OrderBy(r => r.Id)
                 .ToList();
@@ -91,7 +92,7 @@ namespace LibraryManagementSystem.Services
 
         public List<InventoryRecord> GetAvailableCopies(int bookId)
         {
-            return Store.InventoryRecords
+            return _context.InventoryRecords
                 .Where(r => r.BookId == bookId && r.IsAvailable)
                 .ToList();
         }

@@ -1,7 +1,8 @@
-﻿using LibraryManagementSystem.DTOs.User;
-using LibraryManagementSystem.Entities;
+﻿using LibraryManagementSystem.Data;
+using LibraryManagementSystem.DTOs.User;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
+using LibraryManagementSystem.Models;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -11,11 +12,11 @@ namespace LibraryManagementSystem.Services
 {
     public class UserService
     {
-        private readonly LibraryDataStore Store;
+        private readonly LibraryContext _context;
 
-        public UserService(LibraryDataStore store)
+        public UserService(LibraryContext context)
         {
-            Store = store;
+            _context = context;
         }
 
         public UserDto RegisterUser(RegisterUserDto dto, int? createdByUserId = null)
@@ -28,24 +29,24 @@ namespace LibraryManagementSystem.Services
             var usernameNormalized = dto.Username.Trim();
             var emailNormalized = dto.Email.Trim().ToLowerInvariant();
 
-            if (Store.Users.Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
+            if (_context.Users.Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Username already taken.");
 
-            if (Store.Users.Any(u => string.Equals(u.Email, emailNormalized, StringComparison.OrdinalIgnoreCase)))
+            if (_context.Users.Any(u => string.Equals(u.Email, emailNormalized, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Email already registered.");
 
             var user = dto.Adapt<User>();
 
             user.Username = usernameNormalized;
             user.Email = emailNormalized;
-            user.Id = Store.Users.Count + 1;
+            user.Id = _context.Users.Count() + 1;
 
             user.BorrowRecords = user.BorrowRecords ?? new List<BorrowRecord>();
 
             user.CreatedByUserId = createdByUserId;
             user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            Store.Users.Add(user);
+            _context.Users.Add(user);
 
             var outDto = user.Adapt<UserDto>();
             outDto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
@@ -66,7 +67,7 @@ namespace LibraryManagementSystem.Services
             var input = dto.UsernameOrEmail.Trim().ToLower();
             var password = dto.Password.Trim();
 
-            var user = Store.Users.FirstOrDefault(u =>
+            var user = _context.Users.FirstOrDefault(u =>
                 u.Username.ToLower() == input ||
                 u.Email.ToLower() == input);
 
@@ -83,7 +84,7 @@ namespace LibraryManagementSystem.Services
         {
             Validate.Positive(id, "id");
 
-            var user = Store.Users.FirstOrDefault(u => u.Id == id);
+            var user = _context.Users.FirstOrDefault(u => u.Id == id);
             if (user == null)
                 throw new NotFoundException($"User with id {id} not found.");
 
@@ -98,7 +99,7 @@ namespace LibraryManagementSystem.Services
 
         public List<UserDto> GetAllUsers()
         {
-            return Store.Users
+            return _context.Users
                 .Select(u => u.Adapt<UserDto>())
                 .ToList();
         }
