@@ -1,8 +1,9 @@
-﻿using LibraryManagementSystem.DTOs.Book;
+﻿using LibraryManagementSystem.Data;
+using LibraryManagementSystem.DTOs.Book;
 using LibraryManagementSystem.DTOs.Category;
-using LibraryManagementSystem.Entities;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
+using LibraryManagementSystem.Models;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -12,11 +13,11 @@ namespace LibraryManagementSystem.Services
 {
     public class CategoryService
     {
-        private readonly LibraryDataStore Store;
+        private readonly LibraryContext _context;
 
-        public CategoryService(LibraryDataStore store)
+        public CategoryService(LibraryContext context)
         {
-            Store = store;
+            _context = context;
         }
 
         //CRUD
@@ -27,16 +28,16 @@ namespace LibraryManagementSystem.Services
 
             var category = dto.Adapt<Category>();
 
-            category.Id = Store.Categories.Count + 1;
+            category.Id = _context.Categories.Count() + 1;
 
-            Store.Categories.Add(category);
+            _context.Categories.Add(category);
 
             return category.Adapt<CategoryDto>();
         }
 
         public List<CategoryDto> GetAllCategories()
         {
-            return Store.Categories
+            return _context.Categories
                 .Where(c => !c.IsArchived)
                 .Select(c => c.Adapt<CategoryDto>())
                 .ToList();
@@ -47,7 +48,7 @@ namespace LibraryManagementSystem.Services
             Validate.NotNull(dto, nameof(dto));
             Validate.Positive(dto.Id, "Id");
 
-            if (Store.Categories.FirstOrDefault(c => c.Id == dto.Id) is not Category category)
+            if (_context.Categories.FirstOrDefault(c => c.Id == dto.Id) is not Category category)
                 throw new NotFoundException($"Category with id {dto.Id} not found.");
 
             category.Name = dto.Name;
@@ -63,15 +64,15 @@ namespace LibraryManagementSystem.Services
         {
             Validate.Positive(id, "id");
 
-            if (Store.Categories.FirstOrDefault(c => c.Id == id) is not Category category)
+            if (_context.Categories.FirstOrDefault(c => c.Id == id) is not Category category)
                 throw new NotFoundException($"Category with id {id} not found.");
             if (category.IsArchived)
                 throw new ConflictException($"Category with id {id} is already archived.");
 
-            foreach (var book in Store.Books.Where(b => b.CategoryId == id))
+            foreach (var book in _context.Books.Where(b => b.CategoryId == id))
             {
                 book.CategoryId = 0; // Unknown
-                book.Category = Store.Categories.First(c => c.Id == 0);
+                book.Category = _context.Categories.First(c => c.Id == 0);
             }
 
             category.IsArchived = true;

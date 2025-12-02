@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace LibraryManagementSystem.Entities
+namespace LibraryManagementSystem.Models
 {
     public class Author : AuditBase
     {

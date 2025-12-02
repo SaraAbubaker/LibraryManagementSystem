@@ -1,7 +1,8 @@
-﻿using LibraryManagementSystem.DTOs.BorrowRecord;
-using LibraryManagementSystem.Entities;
+﻿using LibraryManagementSystem.Data;
+using LibraryManagementSystem.DTOs.BorrowRecord;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
+using LibraryManagementSystem.Models;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -12,30 +13,28 @@ namespace LibraryManagementSystem.Services
 {
     public class BorrowService
     {
-        private readonly LibraryDataStore Store;
+        private readonly LibraryContext _context;
         private readonly InventoryService Inventory;
-        private readonly List<BorrowRecord> BorrowRecords;
         private int nextBorrowRecordId = 1;
 
-        //Constructor / Dependancy Injection
-        public BorrowService(LibraryDataStore store, InventoryService inventoryService)
+        public BorrowService(LibraryContext context, InventoryService inventoryService)
         {
-            Store = store;
+            _context = context;
             Inventory = inventoryService;
-            BorrowRecords = Store.BorrowRecords;
 
-            if (Store.BorrowRecords.Any())
-                nextBorrowRecordId = Store.BorrowRecords.Max(r => r.Id) + 1;
+            nextBorrowRecordId = _context.BorrowRecords.Any()
+                ? _context.BorrowRecords.Max(r => r.Id) + 1
+                : 1; //start at 1 if empty
         }
 
         //ListAll
         public List<BorrowDto> GetBorrowDetails()
         {
             var query =
-                from b in BorrowRecords
-                join i in Store.InventoryRecords on b.InventoryRecordId equals i.Id into invGroup
+                from b in _context.BorrowRecords
+                join i in _context.InventoryRecords on b.InventoryRecordId equals i.Id into invGroup
                 from inv in invGroup.DefaultIfEmpty()
-                join u in Store.Users on b.UserId equals u.Id into userGroup
+                join u in _context.Users on b.UserId equals u.Id into userGroup
                 from user in userGroup.DefaultIfEmpty()
                 select new BorrowDto
                 {
@@ -82,9 +81,9 @@ namespace LibraryManagementSystem.Services
                 ReturnDate = null
             };
 
-            BorrowRecords.Add(borrow);
+            _context.BorrowRecords.Add(borrow);
 
-            if (Store.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId) is not InventoryRecord copy)
+            if (_context.InventoryRecords.FirstOrDefault(i => i.Id == dto.InventoryRecordId) is not InventoryRecord copy)
                 throw new NotFoundException($"Inventory record with id {dto.InventoryRecordId} not found.");
 
             copy.IsAvailable = false;
@@ -97,7 +96,7 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(borrowRecordId, nameof(borrowRecordId));
             Validate.Positive(currentUserId, nameof(currentUserId));
 
-            if (Store.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId) is not BorrowRecord record)
+            if (_context.BorrowRecords.FirstOrDefault(r => r.Id == borrowRecordId) is not BorrowRecord record)
                 throw new NotFoundException($"Borrow record with id {borrowRecordId} not found.");
             if (record.ReturnDate != null)
                 throw new ConflictException($"Borrow record with id {borrowRecordId} has already been returned.");
@@ -119,7 +118,7 @@ namespace LibraryManagementSystem.Services
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            return Store.BorrowRecords
+            return _context.BorrowRecords
                 .Where(r => r.ReturnDate == null &&
                             r.DueDate < today)
                 .ToList();

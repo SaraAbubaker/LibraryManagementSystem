@@ -1,22 +1,25 @@
-﻿using LibraryManagementSystem.DTOs;
+﻿using LibraryManagementSystem.Data;
+using LibraryManagementSystem.DTOs;
 using LibraryManagementSystem.DTOs.Book;
-using LibraryManagementSystem.Entities;
+using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Extensions;
 using LibraryManagementSystem.Helpers;
+using LibraryManagementSystem.Models;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace LibraryManagementSystem.Services
 {
     public class BookService
     {
-        private readonly LibraryDataStore Store;
-        public BookService(LibraryDataStore store)
+        private readonly LibraryContext _context;
+        public BookService(LibraryContext context)
         {
-            Store = store;
+            _context = context;
         }
 
         //CRUD
@@ -27,70 +30,59 @@ namespace LibraryManagementSystem.Services
 
             var book = dto.Adapt<Book>();  //Mapping using Mapster
 
-            book.Id = (Store.Books.Select(b => b.Id).DefaultIfEmpty(0).Max()) + 1;
-
             book.CreatedByUserId = currentUserId;
             book.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
+            _context.Books.Add(book);
+            _context.SaveChanges();
 
-            Store.Books.Add(book);
             return book;
         }
 
         public BookListDto? GetBookDetails(int bookId)
         {
-            var book = Store.Books.FirstOrDefault(b => b.Id == bookId);
+            var book = _context.Books
+                .Include(b => b.Author)
+                .Include(b => b.Category)
+                .Include(b => b.Publisher)
+                .Include(b => b.InventoryRecords)
+                .FirstOrDefault(b => b.Id == bookId);
             Validate.Exists(book, $"Book with id {bookId}");
 
             var dto = book.Adapt<BookListDto>();
 
-            var result =
-                (from b in Store.Books
-                 where b.Id == bookId
-                 join a in Store.Authors on b.AuthorId equals a.Id into ag
-                 from author in ag.DefaultIfEmpty()
-                 join c in Store.Categories on b.CategoryId equals c.Id into cg
-                 from category in cg.DefaultIfEmpty()
-                 select new
-                 {
-                     AuthorName = author?.Name ?? "Unknown",
-                     CategoryName = category?.Name ?? "Unknown",
-                     IsAvailable = Store.InventoryRecords.Any(r => r.BookId == b.Id && r.IsAvailable)
-                 }).First();
-
-            dto.AuthorName = result.AuthorName;
-            dto.CategoryName = result.CategoryName;
-            dto.IsAvailable = result.IsAvailable;
+            dto.AuthorName = book!.Author?.Name ?? "Unknown";
+            dto.CategoryName = book!.Category?.Name ?? "Unknown";
+            dto.PublisherName = book!.Publisher?.Name ?? "Unknown";
+            dto.IsAvailable = book.InventoryRecords.Any(r => r.IsAvailable);
 
             return dto;
         }
 
         public List<BookListDto> GetBooksByAuthor(int authorId)
         {
-            var author = Store.Authors
+            var author = _context.Authors
                 .FirstOrDefault(a => a.Id == authorId && !a.IsArchived);
             Validate.Exists(author, "Author not found.");
 
             var query =
-                from b in Store.Books
-                where b.AuthorId == authorId && !b.IsArchived
-                join a in Store.Authors.Where(x => !x.IsArchived) on b.AuthorId equals a.Id into ag
-                from auth in ag.DefaultIfEmpty()
-                join c in Store.Categories.Where(x => !x.IsArchived) on b.CategoryId equals c.Id into cg
-                from cat in cg.DefaultIfEmpty()
-                join r in Store.InventoryRecords on b.Id equals r.BookId into invGroup
-                from inv in invGroup.DefaultIfEmpty()
-
-                group new { b, auth, cat, inv } by b into g
-                select new BookListDto
-                {
-                    Id = g.Key.Id,
-                    Title = g.Key.Title,
-                    PublishDate = g.Key.PublishDate,
-                    AuthorName = g.Select(x => x.auth?.Name).FirstOrDefault() ?? "Unknown",
-                    CategoryName = g.Select(x => x.cat?.Name).FirstOrDefault() ?? "Unknown",
-                    IsAvailable = g.Any(x => x.inv != null && x.inv.IsAvailable)
-                };
+                _context.Books
+                    .Where(b => b.AuthorId == authorId && !b.IsArchived)
+                    .Include(b => b.Author)
+                    .Include(b => b.Category)
+                    .Include(b => b.Publisher)
+                    .Include(b => b.InventoryRecords)
+                    .AsEnumerable()
+                    .Select(b => new BookListDto
+                    {
+                        Id = b.Id,
+                        Title = b.Title,
+                        PublishDate = b.PublishDate,
+                        AuthorName = b.Author?.Name ?? "Unknown",
+                        CategoryName = b.Category?.Name ?? "Unknown",
+                        PublisherName = b.Publisher?.Name ?? "Unknown",
+                        IsAvailable = b.InventoryRecords.Any(r => r.IsAvailable)
+                    });
 
             //Sort by Author Name
             return query.OrderBy(x => x.AuthorName).ToList();
@@ -98,16 +90,29 @@ namespace LibraryManagementSystem.Services
 
         public List<BookListDto> GetBooksByCategory(int categoryId)
         {
-            var category = Store.Categories.FirstOrDefault(c => c.Id == categoryId);
+            var category = _context.Categories.FirstOrDefault(c => c.Id == categoryId);
 
             if (category == null || category.IsArchived)
                 categoryId = 0; // unknown
 
-            var books = Store.Books
+            var books = _context.Books
+                .Include(b => b.Author)
+                .Include(b => b.Category)
+                .Include(b => b.Publisher)
+                .Include(b => b.InventoryRecords)
                 .Where(b => b.CategoryId == categoryId)
                 .ToList();
 
-            return books.Adapt<List<BookListDto>>();
+            return books.Select(b => new BookListDto
+            {
+                Id = b.Id,
+                Title = b.Title,
+                PublishDate = b.PublishDate,
+                AuthorName = b.Author?.Name ?? "Unknown",
+                CategoryName = b.Category?.Name ?? "Unknown",
+                PublisherName = b.Publisher?.Name ?? "Unknown",
+                IsAvailable = b.InventoryRecords.Any(r => r.IsAvailable)
+            }).ToList();
         }
 
         public bool UpdateBook(UpdateBookDto dto, int currentUserId)
@@ -116,19 +121,41 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(dto.Id, "Id");
             Validate.Positive(currentUserId, "currentUserId");
 
-            if (Store.Books.FirstOrDefault(b => b.Id == dto.Id) is not Book book)
-                throw new LibraryManagementSystem.Exceptions.NotFoundException($"Book with id {dto.Id} not found.");
+            var book = _context.Books
+                .Include(b => b.Publisher)
+                .FirstOrDefault(b => b.Id == dto.Id);
+            if (book == null)
+                throw new NotFoundException($"Book with id {dto.Id} not found.");
 
             if (dto.Title != null) book.Title = dto.Title;
             if (dto.PublishDate != null) book.PublishDate = dto.PublishDate.Value;
             if (dto.Version != null) book.Version = dto.Version;
-            if (dto.Publisher != null) book.Publisher = dto.Publisher;
-            if (dto.AuthorId != null) book.AuthorId = dto.AuthorId.Value;
-            if (dto.CategoryId != null) book.CategoryId = dto.CategoryId.Value;
+
+            if (dto.PublisherId.HasValue)
+            {
+                var publisherExists = _context.Publishers.Any(p => p.Id == dto.PublisherId.Value && !p.IsArchived);
+                if (!publisherExists) throw new NotFoundException("Publisher not found.");
+                book.PublisherId = dto.PublisherId.Value;
+            }
+
+            if (dto.AuthorId.HasValue)
+            {
+                var authorExists = _context.Authors.Any(a => a.Id == dto.AuthorId.Value && !a.IsArchived);
+                if (!authorExists) throw new NotFoundException("Author not found.");
+                book.AuthorId = dto.AuthorId.Value;
+            }
+
+            if (dto.CategoryId.HasValue)
+            {
+                var categoryExists = _context.Categories.Any(c => c.Id == dto.CategoryId.Value && !c.IsArchived);
+                if (!categoryExists) throw new NotFoundException("Category not found.");
+                book.CategoryId = dto.CategoryId.Value;
+            }
 
             book.LastModifiedByUserId = currentUserId;
             book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
+            _context.SaveChanges();
             return true;
         }
 
@@ -137,13 +164,15 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(bookId, "bookId");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            if (Store.Books.FirstOrDefault(b => b.Id == bookId) is not Book book)
-                throw new LibraryManagementSystem.Exceptions.NotFoundException($"Book with id {bookId} not found.");
+            var book = _context.Books.FirstOrDefault(b => b.Id == bookId);
+            if (book == null)
+                throw new NotFoundException($"Book with id {bookId} not found.");
 
             book.IsArchived = true;
             book.ArchivedByUserId = performedByUserId;
             book.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
+            _context.SaveChanges();
             return true;
         }
 
@@ -152,69 +181,84 @@ namespace LibraryManagementSystem.Services
         {
             Validate.NotNull(dto, nameof(dto));
 
-            var authorsById = Store.Authors.ToDictionary(a => a.Id, a => a.Name);
-            var categoriesById = Store.Categories.ToDictionary(c => c.Id, c => c.Name);
-            var availableBookIds = new HashSet<int>(
-                Store.InventoryRecords.Where(r => r.IsAvailable).Select(r => r.BookId)
-            );
-
             var skip = (Math.Max(1, dto.Page) - 1) * Math.Max(1, dto.PageSize);
 
-            var results = Store.Books
-                //Search
-                .WhereIf(!string.IsNullOrWhiteSpace(dto.SearchParam), b =>
-                {
-                    string authorName = authorsById.TryGetValue(b.AuthorId, out var an) ? an : "";
-                    string categoryName = categoriesById.TryGetValue(b.CategoryId, out var cn) ? cn : "";
-                    var search = dto.SearchParam!;
-                    return (b.Title ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0
-                           || authorName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0
-                           || categoryName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0
-                           || (b.Publisher ?? "").IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
-                })
+            var query = _context.Books
+                .Include(b => b.InventoryRecords)
+                .Include(b => b.Author)
+                .Include(b => b.Category)
+                .Include(b => b.Publisher)
+                .AsQueryable();
 
-                //Filter
-                .WhereIf(!string.IsNullOrWhiteSpace(dto.Title), b =>
-                    (b.Title ?? "").IndexOf(dto.Title!, StringComparison.OrdinalIgnoreCase) >= 0)
-                .WhereIf(dto.AuthorId.HasValue, b => b.AuthorId == dto.AuthorId!.Value)
-                .WhereIf(dto.CategoryId.HasValue, b => b.CategoryId == dto.CategoryId!.Value)
-                .WhereIf(!string.IsNullOrWhiteSpace(dto.Publisher), b =>
-                    (b.Publisher ?? "").IndexOf(dto.Publisher!, StringComparison.OrdinalIgnoreCase) >= 0)
-                .WhereIf(dto.IsAvailable.HasValue, b =>
-                    availableBookIds.Contains(b.Id) == dto.IsAvailable!.Value)
-                .WhereIf(dto.PublishDate.HasValue, b => b.PublishDate == dto.PublishDate!.Value);
-
-            //Sort
-            var sortKey = (dto.SortBy ?? "title").Trim().ToLower();
-            var desc = dto.SortDir?.Equals("desc", StringComparison.OrdinalIgnoreCase) ?? false;
-
-            var keySelector = new Dictionary<string, Func<Book, object>>(StringComparer.OrdinalIgnoreCase)
+            //Search
+            if (!string.IsNullOrWhiteSpace(dto.SearchParam))
             {
-                ["title"] = b => b.Title ?? "",
-                ["publishdate"] = b => b.PublishDate,
-                ["author"] = b => authorsById.TryGetValue(b.AuthorId, out var an) ? an : "",
-                ["category"] = b => categoriesById.TryGetValue(b.CategoryId, out var cn) ? cn : "",
-                ["publisher"] = b => b.Publisher ?? "",
-                ["isavailable"] = b => availableBookIds.Contains(b.Id)
+                var search = dto.SearchParam.Trim();
+                query = query.Where(b =>
+                    EF.Functions.Like(b.Title, $"%{search}%") ||
+                    (b.Author != null && EF.Functions.Like(b.Author.Name, $"%{search}%")) ||
+                    (b.Category != null && EF.Functions.Like(b.Category.Name, $"%{search}%")) ||
+                    (b.Publisher != null && EF.Functions.Like(b.Publisher.Name, $"%{search}%"))
+                );
+            }
+
+            //Filter
+            if (!string.IsNullOrWhiteSpace(dto.Title))
+            {
+                var titleFilter = dto.Title.Trim();
+                query = query.Where(b => EF.Functions.Like(b.Title, $"%{titleFilter}%"));
+            }
+
+            if (dto.AuthorId.HasValue)
+                query = query.Where(b => b.AuthorId == dto.AuthorId.Value);
+
+            if (dto.CategoryId.HasValue)
+                query = query.Where(b => b.CategoryId == dto.CategoryId.Value);
+
+            if (dto.PublisherId.HasValue)
+                query = query.Where(b => b.PublisherId == dto.PublisherId.Value);
+
+            if (dto.IsAvailable.HasValue)
+            {
+                query = query.Where(b =>
+                    dto.IsAvailable.Value ? b.InventoryRecords.Any(r => r.IsAvailable)
+                                          : !b.InventoryRecords.Any(r => r.IsAvailable)
+                );
+            }
+
+            if (dto.PublishDate.HasValue)
+                query = query.Where(b => b.PublishDate == dto.PublishDate.Value);
+
+            //Sorting
+            query = (dto.SortBy?.Trim().ToLower()) switch
+            {
+                "title" => dto.SortDir?.ToLower() == "desc" ? query.OrderByDescending(b => b.Title) : query.OrderBy(b => b.Title),
+                "publishdate" => dto.SortDir?.ToLower() == "desc" ? query.OrderByDescending(b => b.PublishDate) : query.OrderBy(b => b.PublishDate),
+                "author" => dto.SortDir?.ToLower() == "desc" ? query.OrderByDescending(b => b.Author != null ? b.Author.Name : "") : query.OrderBy(b => b.Author != null ? b.Author.Name : ""),
+                "category" => dto.SortDir?.ToLower() == "desc" ? query.OrderByDescending(b => b.Category != null ? b.Category.Name : "") : query.OrderBy(b => b.Category != null ? b.Category.Name : ""),
+                "publisher" => dto.SortDir?.ToLower() == "desc" ? query.OrderByDescending(b => b.Publisher != null ? b.Publisher.Name : "") : query.OrderBy(b => b.Publisher != null ? b.Publisher.Name : ""),
+                "isavailable" => dto.SortDir?.ToLower() == "desc"
+                ? query.OrderByDescending(b => b.InventoryRecords.Any(r => r.IsAvailable))
+                : query.OrderBy(b => b.InventoryRecords.Any(r => r.IsAvailable)),
+                _ => query.OrderBy(b => b.Title)
             };
 
-            var selector = keySelector.TryGetValue(sortKey, out var sel) ? sel : keySelector["title"];
-            var ordered = desc ? results.OrderByDescending(selector) : results.OrderBy(selector);
-
-            //Pagination + mapping + DTO
-            return ordered
+            //Pagination + mapping
+            var books = query
                 .Skip(skip)
                 .Take(Math.Max(1, dto.PageSize))
-                .Select(b =>
-                {
-                    var outDto = b.Adapt<BookListDto>();
-                    outDto.AuthorName = authorsById.TryGetValue(b.AuthorId, out var an) ? an : "Unknown";
-                    outDto.CategoryName = categoriesById.TryGetValue(b.CategoryId, out var cn) ? cn : "Unknown";
-                    outDto.Publisher = b.Publisher ?? string.Empty;
-                    outDto.IsAvailable = availableBookIds.Contains(b.Id);
-                    return outDto;
-                })
                 .ToList();
+
+            return books.Select(b => new BookListDto
+            {
+                Id = b.Id,
+                Title = b.Title,
+                PublishDate = b.PublishDate,
+                AuthorName = b.Author?.Name ?? "Unknown",
+                CategoryName = b.Category?.Name ?? "Unknown",
+                PublisherName = b.Publisher?.Name ?? "Unknown",
+                IsAvailable = b.InventoryRecords.Any(r => r.IsAvailable)
+            }).ToList();
         }
     }
 }

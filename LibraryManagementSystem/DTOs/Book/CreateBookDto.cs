@@ -14,9 +14,9 @@ namespace LibraryManagementSystem.DTOs.Book
         public DateOnly PublishDate { get; set; }
         [StringLength(50)]
         public string? Version { get; set; }
-        [StringLength(200)]
-        public string? Publisher { get; set; }
 
+        [Required]
+        public int? PublisherId { get; set; } 
         [Required]
         public int AuthorId { get; set; }
         [Required]
