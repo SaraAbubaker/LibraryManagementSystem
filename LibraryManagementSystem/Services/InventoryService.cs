@@ -32,6 +32,9 @@ namespace LibraryManagementSystem.Services
             copy!.IsAvailable = true;
             copy.LastModifiedByUserId = currentUserId;
             copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Today);
+
+            _context.SaveChanges();
+
             return true;
         }
 
@@ -41,12 +44,9 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(bookId, "bookId");
             Validate.NotEmpty(copyCode, "copyCode");
             Validate.Positive(createdByUserId, "createdByUserId");
-
-            var nextId = _context.InventoryRecords.Any() ? _context.InventoryRecords.Max(r => r.Id) + 1 : 1;
-
+            
             var record = new InventoryRecord
             {
-                Id = nextId,
                 BookId = bookId,
                 CopyCode = copyCode,
                 IsAvailable = true,
@@ -55,10 +55,12 @@ namespace LibraryManagementSystem.Services
             };
 
             _context.InventoryRecords.Add(record);
+            _context.SaveChanges();
+
             return record;
         }
 
-        public bool RemoveCopy(int inventoryRecordId, int performedByUserId = 0)
+        public bool RemoveCopy(int inventoryRecordId, int performedByUserId)
         {
             Validate.Positive(inventoryRecordId, "inventoryRecordId");
             Validate.Positive(performedByUserId, "performedByUserId");
@@ -71,8 +73,9 @@ namespace LibraryManagementSystem.Services
 
             var bookId = copy.BookId;
             _context.InventoryRecords.Remove(copy);
+            _context.SaveChanges();
 
-            //If no more copies exist, archive the book
+            //Archive book if no copies remain
             var anyLeft = _context.InventoryRecords.Any(r => r.BookId == bookId);
             if (!anyLeft)
             {
@@ -81,6 +84,7 @@ namespace LibraryManagementSystem.Services
 
             return true;
         }
+
 
         public List<InventoryRecord> ListCopiesForBook(int bookId)
         {
