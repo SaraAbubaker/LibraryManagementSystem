@@ -21,5 +21,8 @@ namespace LibraryManagementSystem.DTOs.Book
         public DateOnly CreatedDate { get; set; }
         public int? LastModifiedByUserId { get; set; }
         public DateOnly? LastModifiedDate { get; set; }
+        public bool IsArchived { get; set; }
+        public int? ArchivedByUserId { get; set; }
+        public DateTime? ArchivedDate { get; set; }
     }
 }
