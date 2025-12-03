@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace LibraryManagementSystem.Services
 {
@@ -24,7 +25,7 @@ namespace LibraryManagementSystem.Services
         }
 
         //CRUD
-        public AuthorListDto CreateAuthor(CreateAuthorDto dto)
+        public async Task<AuthorListDto> CreateAuthorAsync(CreateAuthorDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Name, "Author name");
@@ -35,28 +36,29 @@ namespace LibraryManagementSystem.Services
                 Email = dto.Email
             };
 
-            _authorRepo.Add(author);
+            await _authorRepo.AddAsync(author);
 
             var result = author.Adapt<AuthorListDto>();
 
-            result.BookCount = _bookRepo.GetAll().Count(b => b.AuthorId == author.Id && !b.IsArchived);
+            var books = await _bookRepo.GetAllAsync();
+            result.BookCount = books.Count(b => b.AuthorId == author.Id && !b.IsArchived);
 
             return result;
         }
 
-        public List<AuthorListDto> ListAuthors()
+        public async Task<List<AuthorListDto>> ListAuthorsAsync()
         {
-            var bookCounts = _bookRepo.GetAll()
+            var books = await _bookRepo.GetAllAsync();
+            var bookCounts = books
                 .Where(b => !b.IsArchived)
                 .GroupBy(b => b.AuthorId)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            var authors = _authorRepo.GetAll()
-                .Where(a => !a.IsArchived)
-                .OrderBy(a => a.Name)
-                .ToList();
 
-            return authors
+            var authors = await _authorRepo.GetAllAsync();
+            var activeAuthors = authors.Where(a => !a.IsArchived).OrderBy(a => a.Name);
+
+            return activeAuthors
                 .Select(a =>
                 {
                     var dto = a.Adapt<AuthorListDto>();
@@ -66,26 +68,27 @@ namespace LibraryManagementSystem.Services
                 .ToList();
         }
 
-        public AuthorListDto? GetAuthorById(int id)
+        public async Task<AuthorListDto?> GetAuthorByIdAsync(int id)
         {
             Validate.Positive(id, "Id");
 
-            var author = _authorRepo.GetById(id);
+            var author = await _authorRepo.GetByIdAsync(id);
             if (author == null || author.IsArchived) return null;
 
             var dto = author.Adapt<AuthorListDto>();
-            dto.BookCount = _bookRepo.GetAll().Count(b => b.AuthorId == author.Id && !b.IsArchived);
+            var books = await _bookRepo.GetAllAsync();
+            dto.BookCount = books.Count(b => b.AuthorId == author.Id && !b.IsArchived);
 
             return dto;
         }
 
-        public bool EditAuthor(UpdateAuthorDto dto)
+        public async Task<bool> EditAuthorAsync(UpdateAuthorDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.Positive(dto.Id, "Id");
             Validate.NotEmpty(dto.Name, "Author name");
 
-            var author = _authorRepo.GetById(dto.Id);
+            var author = await _authorRepo.GetByIdAsync(dto.Id);
             if (author.IsArchived) throw new ConflictException($"Author with id {dto.Id} is archived.");
 
             author.Name = dto.Name;
@@ -96,20 +99,19 @@ namespace LibraryManagementSystem.Services
             return true;
         }
 
-        public bool ArchiveAuthor(int id, int performedByUserId)
+        public async Task<bool> ArchiveAuthorAsync(int id, int performedByUserId)
         {
             Validate.Positive(id, "Id");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            var author = _authorRepo.GetById(id);
+            var author = await _authorRepo.GetByIdAsync(id);
+            if (author == null) throw new NotFoundException($"Author with id {id} not found.");
+            if (author.IsArchived) throw new ConflictException($"Author with id {id} is already archived.");
 
-            if (author!.IsArchived)
-                throw new ConflictException($"Author with id {id} is already archived.");
-
-            var books = _bookRepo.GetAll().Where(b => b.AuthorId == id).ToList();
+            var books = (await _bookRepo.GetAllAsync()).Where(b => b.AuthorId == id).ToList();
             foreach (var book in books)
             {
-                book.AuthorId = -1; //Unknown
+                book.AuthorId = -1; // Unknown
                 _bookRepo.Update(book);
             }
 
