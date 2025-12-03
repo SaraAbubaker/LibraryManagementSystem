@@ -4,6 +4,7 @@ using LibraryManagementSystem.DTOs.Category;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
 using LibraryManagementSystem.Models;
+using LibraryManagementSystem.Repositories;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -13,12 +14,17 @@ namespace LibraryManagementSystem.Services
 {
     public class CategoryService
     {
-        private readonly LibraryContext _context;
+        private readonly IGenericRepository<Category> _categoryRepo;
+        private readonly IGenericRepository<Book> _bookRepo;
 
-        public CategoryService(LibraryContext context)
+        public CategoryService(
+            IGenericRepository<Category> categoryRepo,
+            IGenericRepository<Book> bookRepo)
         {
-            _context = context;
+            _categoryRepo = categoryRepo;
+            _bookRepo = bookRepo;
         }
+
 
         //CRUD
         public CategoryDto CreateCategory(CreateCategoryDto dto)
@@ -28,15 +34,14 @@ namespace LibraryManagementSystem.Services
 
             var category = dto.Adapt<Category>();
 
-            _context.Categories.Add(category);
-            _context.SaveChanges();
+            _categoryRepo.Add(category);
 
             return category.Adapt<CategoryDto>();
         }
 
         public List<CategoryDto> GetAllCategories()
         {
-            return _context.Categories
+            return _categoryRepo.GetAll()
                 .Where(c => !c.IsArchived)
                 .Select(c => c.Adapt<CategoryDto>())
                 .ToList();
@@ -48,14 +53,13 @@ namespace LibraryManagementSystem.Services
             Validate.NotEmpty(dto.Name, "Category name");
             Validate.Positive(dto.Id, "Id");
 
-            var category = _context.Categories.FirstOrDefault(c => c.Id == dto.Id);
-            Validate.Exists(category, $"Category with id {dto.Id}");
+            var category = _categoryRepo.GetById(dto.Id);
 
             category!.Name = dto.Name;
             category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             category.LastModifiedByUserId = userId;
 
-            _context.SaveChanges();
+            _categoryRepo.Update(category);
 
             return category.Adapt<CategoryDto>();
         }
@@ -65,23 +69,23 @@ namespace LibraryManagementSystem.Services
         {
             Validate.Positive(id, "id");
 
-            var category = _context.Categories.FirstOrDefault(c => c.Id == id);
-            Validate.Exists(category, $"Category with id {id}");
+            var category = _categoryRepo.GetById(id);
 
             if (category!.IsArchived)
                 throw new ConflictException($"Category with id {id} is already archived.");
 
-            foreach (var book in _context.Books.Where(b => b.CategoryId == id))
+            foreach (var book in _bookRepo.GetAll().Where(b => b.CategoryId == id))
             {
-                book.CategoryId = -1; // Unknown
-                book.Category = _context.Categories.First(c => c.Id == 0);
+                book.CategoryId = -1; //Unknown
+                book.Category = _categoryRepo.GetById(0); //Unknown category
+                _bookRepo.Update(book);
             }
 
             category.IsArchived = true;
             category.ArchivedByUserId = archivedByUserId;
             category.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _context.SaveChanges();
+            _categoryRepo.Update(category);
 
             return true;
         }

@@ -3,6 +3,7 @@ using LibraryManagementSystem.DTOs.User;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
 using LibraryManagementSystem.Models;
+using LibraryManagementSystem.Repositories;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,14 +14,19 @@ namespace LibraryManagementSystem.Services
 {
     public class UserService
     {
-        private readonly LibraryContext _context;
+        private readonly IGenericRepository<User> _userRepo;
+        private readonly IGenericRepository<UserType> _userTypeRepo;
 
-        public UserService(LibraryContext context)
+        public UserService(
+            IGenericRepository<User> userRepo,
+            IGenericRepository<UserType> userTypeRepo)
         {
-            _context = context;
+            _userRepo = userRepo;
+            _userTypeRepo = userTypeRepo;
         }
 
-        public UserDto RegisterUser(RegisterUserDto dto, int? createdByUserId = null)
+
+        public UserDto RegisterUser(RegisterUserDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Username, "Username");
@@ -30,35 +36,31 @@ namespace LibraryManagementSystem.Services
             var usernameNormalized = dto.Username.Trim();
             var emailInput = dto.Email.Trim();
 
-            if (_context.Users.Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
+            if (_userRepo.GetAll().Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Username already taken.");
 
-            if (_context.Users.Any(u => u.Email == emailInput))
+            if (_userRepo.GetAll().Any(u => u.Email == emailInput))
                 throw new InvalidOperationException("Email already registered.");
 
-            var userType = _context.UserTypes.FirstOrDefault(ut => ut.Id == dto.UserTypeId);
-            Validate.Exists(userType, $"UserType with id {dto.UserTypeId}");
+            //Normal user
+            var userType = _userTypeRepo.GetById(2); 
 
             var user = dto.Adapt<User>();
-
             user.Username = usernameNormalized;
             user.Email = emailInput;
-            user.BorrowRecords = user.BorrowRecords ?? new List<BorrowRecord>();
-
-            user.CreatedByUserId = createdByUserId;
+            user.UserTypeId = userType.Id;
+            user.BorrowRecords = new List<BorrowRecord>();
+            user.CreatedByUserId = null;  // No creator for self-registration
             user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _context.Users.Add(user);
-            _context.SaveChanges();
+            _userRepo.Add(user);
 
             var outDto = user.Adapt<UserDto>();
             outDto.UserTypeId = user.UserTypeId;
-            outDto.UserRole = userType!.Role;
-            outDto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
+            outDto.UserRole = userType.Role;
+            outDto.BorrowedBooksCount = 0;
             outDto.CreatedByUserId = user.CreatedByUserId;
             outDto.CreatedDate = user.CreatedDate;
-            outDto.LastModifiedByUserId = user.LastModifiedByUserId;
-            outDto.LastModifiedDate = user.LastModifiedDate;
 
             return outDto;
         }
@@ -72,11 +74,10 @@ namespace LibraryManagementSystem.Services
             var input = dto.UsernameOrEmail.Trim();
             var password = dto.Password.Trim();
 
-            var user = _context.Users
-                .Include(u => u.BorrowRecords)
+            var user = _userRepo.GetAll()
                 .FirstOrDefault(u =>
-                    string.Equals(u.Username, input, StringComparison.OrdinalIgnoreCase) 
-                    || u.Email == input
+                string.Equals(u.Username, input, StringComparison.OrdinalIgnoreCase)
+                || u.Email == input
                 );
 
             if (user == null || user.Password != password)
@@ -92,12 +93,7 @@ namespace LibraryManagementSystem.Services
         {
             Validate.Positive(id, "id");
 
-            var user = _context.Users
-                .Include(u => u.BorrowRecords)
-                .Include(u => u.UserType)
-                .FirstOrDefault(u => u.Id == id);
-
-            Validate.Exists(user, $"User with id {id}");
+            var user = _userRepo.GetById(id);
 
             var dto = user.Adapt<UserDto>();
             dto.UserRole = user!.UserType!.Role;
@@ -108,10 +104,7 @@ namespace LibraryManagementSystem.Services
 
         public List<UserDto> GetAllUsers()
         {
-            var users = _context.Users
-            .Include(u => u.BorrowRecords)
-            .Include(u => u.UserType)
-            .ToList();
+            var users = _userRepo.GetAll().ToList();
 
             var dtos = users.Adapt<List<UserDto>>();
 

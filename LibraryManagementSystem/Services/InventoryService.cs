@@ -2,6 +2,7 @@
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
 using LibraryManagementSystem.Models;
+using LibraryManagementSystem.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,14 +12,20 @@ namespace LibraryManagementSystem.Services
 {
     public class InventoryService
     {
-        private readonly LibraryContext _context;
+        private readonly IGenericRepository<InventoryRecord> _inventoryRepo;
+        private readonly IGenericRepository<Book> _bookRepo;
         private readonly BookService BookService;
 
-        public InventoryService(LibraryContext context, BookService bookService)
+        public InventoryService(
+            IGenericRepository<InventoryRecord> inventoryRepo,
+            IGenericRepository<Book> bookRepo,
+            BookService bookService)
         {
-            _context = context;
+            _inventoryRepo = inventoryRepo;
+            _bookRepo = bookRepo;
             BookService = bookService;
         }
+
 
         //Available = true + audit fields set
         public bool ReturnCopy(int inventoryRecordId, int currentUserId)
@@ -26,14 +33,13 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(inventoryRecordId, "inventoryRecordId");
             Validate.Positive(currentUserId, "currentUserId");
 
-            var copy = _context.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
-            Validate.Exists(copy, $"Inventory record with id {inventoryRecordId}");
+            var copy = _inventoryRepo.GetById(inventoryRecordId);
 
-            copy!.IsAvailable = true;
+            copy.IsAvailable = true;
             copy.LastModifiedByUserId = currentUserId;
             copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Today);
 
-            _context.SaveChanges();
+            _inventoryRepo.Update(copy);
 
             return true;
         }
@@ -51,11 +57,10 @@ namespace LibraryManagementSystem.Services
                 CopyCode = copyCode,
                 IsAvailable = true,
                 CreatedByUserId = createdByUserId,
-                CreatedDate = DateOnly.FromDateTime(DateTime.UtcNow)
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now)
             };
 
-            _context.InventoryRecords.Add(record);
-            _context.SaveChanges();
+            _inventoryRepo.Add(record);
 
             return record;
         }
@@ -65,30 +70,28 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(inventoryRecordId, "inventoryRecordId");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            var copy = _context.InventoryRecords.FirstOrDefault(r => r.Id == inventoryRecordId);
-            Validate.Exists(copy, $"Inventory record with id {inventoryRecordId}");
+            var copy = _inventoryRepo.GetById(inventoryRecordId);
+            
+            copy.IsArchived = true;
+            copy.ArchivedByUserId = performedByUserId;
+            copy.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            if (!copy!.IsAvailable)
-                throw new ConflictException("Cannot remove a copy that is currently borrowed.");
+            _inventoryRepo.Update(copy);
 
-            var bookId = copy.BookId;
-            _context.InventoryRecords.Remove(copy);
-            _context.SaveChanges();
-
-            //Archive book if no copies remain
-            var anyLeft = _context.InventoryRecords.Any(r => r.BookId == bookId);
+            //Archive the book if no copies remain
+            var anyLeft = _inventoryRepo.GetAll()
+                .Any(r => r.BookId == copy.BookId && !r.IsArchived);
             if (!anyLeft)
             {
-                BookService.ArchiveBook(bookId, performedByUserId);
+                BookService.ArchiveBook(copy.BookId, performedByUserId);
             }
 
             return true;
         }
 
-
         public List<InventoryRecord> ListCopiesForBook(int bookId)
         {
-            return _context.InventoryRecords
+            return _inventoryRepo.GetAll()
                 .Where(r => r.BookId == bookId)
                 .OrderBy(r => r.Id)
                 .ToList();
@@ -96,7 +99,7 @@ namespace LibraryManagementSystem.Services
 
         public List<InventoryRecord> GetAvailableCopies(int bookId)
         {
-            return _context.InventoryRecords
+            return _inventoryRepo.GetAll()
                 .Where(r => r.BookId == bookId && r.IsAvailable)
                 .ToList();
         }

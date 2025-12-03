@@ -3,6 +3,7 @@ using LibraryManagementSystem.DTOs.Author;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
 using LibraryManagementSystem.Models;
+using LibraryManagementSystem.Repositories;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,11 +14,13 @@ namespace LibraryManagementSystem.Services
 {
     public class AuthorService
     {
-        private readonly LibraryContext _context;
+        private readonly IGenericRepository<Author> _authorRepo;
+        private readonly IGenericRepository<Book> _bookRepo;
 
-        public AuthorService(LibraryContext context)
+        public AuthorService(IGenericRepository<Author> authorRepo, IGenericRepository<Book> bookRepo)
         {
-            _context = context;
+            _authorRepo = authorRepo;
+            _bookRepo = bookRepo;
         }
 
         //CRUD
@@ -32,24 +35,23 @@ namespace LibraryManagementSystem.Services
                 Email = dto.Email
             };
 
-            _context.Authors.Add(author);
-            _context.SaveChanges();
+            _authorRepo.Add(author);
 
             var result = author.Adapt<AuthorListDto>();
 
-            result.BookCount = _context.Books.Count(b => b.AuthorId == author.Id);
+            result.BookCount = _bookRepo.GetAll().Count(b => b.AuthorId == author.Id && !b.IsArchived);
 
             return result;
         }
 
         public List<AuthorListDto> ListAuthors()
         {
-            var bookCounts = _context.Books
+            var bookCounts = _bookRepo.GetAll()
                 .Where(b => !b.IsArchived)
                 .GroupBy(b => b.AuthorId)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            var authors = _context.Authors
+            var authors = _authorRepo.GetAll()
                 .Where(a => !a.IsArchived)
                 .OrderBy(a => a.Name)
                 .ToList();
@@ -66,9 +68,15 @@ namespace LibraryManagementSystem.Services
 
         public AuthorListDto? GetAuthorById(int id)
         {
-            var author = _context.Authors
-                .FirstOrDefault(a => a.Id == id && !a.IsArchived);
-            return author?.Adapt<AuthorListDto>();
+            Validate.Positive(id, "Id");
+
+            var author = _authorRepo.GetById(id);
+            if (author == null || author.IsArchived) return null;
+
+            var dto = author.Adapt<AuthorListDto>();
+            dto.BookCount = _bookRepo.GetAll().Count(b => b.AuthorId == author.Id && !b.IsArchived);
+
+            return dto;
         }
 
         public bool EditAuthor(UpdateAuthorDto dto)
@@ -77,13 +85,14 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(dto.Id, "Id");
             Validate.NotEmpty(dto.Name, "Author name");
 
-            var author = _context.Authors.FirstOrDefault(a => a.Id == dto.Id && !a.IsArchived);
-            Validate.Exists(author, $"Author with id {dto.Id}");
+            var author = _authorRepo.GetById(dto.Id);
+            if (author.IsArchived) throw new ConflictException($"Author with id {dto.Id} is archived.");
 
-            author!.Name = dto.Name;
+            author.Name = dto.Name;
             author.Email = dto.Email;
 
-            _context.SaveChanges();
+            _authorRepo.Update(author);
+
             return true;
         }
 
@@ -92,25 +101,25 @@ namespace LibraryManagementSystem.Services
             Validate.Positive(id, "Id");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            var author = _context.Authors.FirstOrDefault(a => a.Id == id);
-            Validate.Exists(author, $"Author with id {id}");
+            var author = _authorRepo.GetById(id);
 
             if (author!.IsArchived)
                 throw new ConflictException($"Author with id {id} is already archived.");
 
-            var books = _context.Books.Where(b => b.AuthorId == id).ToList();
+            var books = _bookRepo.GetAll().Where(b => b.AuthorId == id).ToList();
             foreach (var book in books)
             {
-                book.AuthorId = -1; // Unknown Author
+                book.AuthorId = -1; //Unknown
+                _bookRepo.Update(book);
             }
 
             author.Name = "Unknown";
             author.Email = string.Empty;
             author.IsArchived = true;
-            author.ArchivedDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             author.ArchivedByUserId = performedByUserId;
 
-            _context.SaveChanges();
+            _authorRepo.Update(author);
             return true;
         }
     }
