@@ -1,6 +1,8 @@
 ﻿using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace LibraryManagementSystem.Controllers
 {
@@ -8,19 +10,19 @@ namespace LibraryManagementSystem.Controllers
     [Route("api/[controller]")]
     public class InventoryController : ControllerBase
     {
-        private readonly InventoryService Service;
+        private readonly InventoryService _service;
 
         public InventoryController(InventoryService service)
         {
-            Service = service;
+            _service = service;
         }
 
         [HttpGet("book/{bookId}")]
-        public IActionResult ListCopies(int bookId)
+        public async Task<IActionResult> ListCopies(int bookId)
         {
             try
             {
-                var result = Service.ListCopiesForBook(bookId);
+                var result = await _service.ListCopiesForBookAsync(bookId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -30,11 +32,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpGet("available/{bookId}")]
-        public IActionResult ListAvailableCopies(int bookId)
+        public async Task<IActionResult> ListAvailableCopies(int bookId)
         {
             try
             {
-                var result = Service.GetAvailableCopies(bookId);
+                var result = await _service.GetAvailableCopiesAsync(bookId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -44,11 +46,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateCopy(int bookId, string copyCode, [FromQuery] int userId)
+        public async Task<IActionResult> CreateCopy(int bookId, string copyCode, [FromQuery] int userId)
         {
             try
             {
-                var record = Service.CreateCopy(bookId, copyCode, userId);
+                var record = await _service.CreateCopyAsync(bookId, copyCode, userId);
                 return Ok(record);
             }
             catch (Exception ex)
@@ -57,12 +59,12 @@ namespace LibraryManagementSystem.Controllers
             }
         }
 
-        [HttpPut("archive {id}")]
-        public IActionResult RemoveCopy(int id, [FromQuery] int userId)
+        [HttpPut("archive/{id}")]
+        public async Task<IActionResult> RemoveCopy(int id, [FromQuery] int userId)
         {
             try
             {
-                var success = Service.RemoveCopy(id, userId);
+                var success = await _service.RemoveCopyAsync(id, userId);
 
                 if (!success)
                     return BadRequest("Copy cannot be removed (may be borrowed or not found).");
@@ -76,11 +78,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost("return/{inventoryRecordId}")]
-        public IActionResult ReturnCopy(int inventoryRecordId, [FromQuery] int userId)
+        public async Task<IActionResult> ReturnCopy(int inventoryRecordId, [FromQuery] int userId)
         {
             try
             {
-                var success = Service.ReturnCopy(inventoryRecordId, userId);
+                var success = await _service.ReturnCopyAsync(inventoryRecordId, userId);
 
                 if (!success)
                     return NotFound("Inventory record not found.");

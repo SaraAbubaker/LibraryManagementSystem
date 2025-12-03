@@ -55,7 +55,7 @@ namespace LibraryManagementSystem.Services
             return copies.Any();
         }
 
-        public InventoryRecord? GetAvailableCopy(int bookId)
+        public async Task<InventoryRecord?> GetAvailableCopyAsync(int bookId)
         {
             Validate.Positive(bookId, nameof(bookId));
             var copies = await Inventory.GetAvailableCopiesAsync(bookId);
@@ -74,7 +74,7 @@ namespace LibraryManagementSystem.Services
                 throw new ConflictException("Inventory copy is not available.");
 
             copy.IsAvailable = false;
-            _inventoryRepo.Update(copy);
+            await _inventoryRepo.UpdateAsync(copy);
 
             var borrow = new BorrowRecord
             {
@@ -104,9 +104,9 @@ namespace LibraryManagementSystem.Services
             record.LastModifiedByUserId = currentUserId;
             record.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _borrowRepo.Update(record);
+            await _borrowRepo.UpdateAsync(record);
 
-            return Inventory.ReturnCopy(record.InventoryRecordId, currentUserId);
+            return await Inventory.ReturnCopyAsync(record.InventoryRecordId, currentUserId);
         }
 
 

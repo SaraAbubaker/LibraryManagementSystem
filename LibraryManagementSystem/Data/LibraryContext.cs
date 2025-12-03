@@ -19,13 +19,15 @@ namespace LibraryManagementSystem.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=(localdb)\\ProjectModels;Database=LibraryDB;Trusted_Connection=True;");
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlServer("Server=(localdb)\\ProjectModels;Database=LibraryDB;Trusted_Connection=True;");
+            }
         }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            base.OnModelCreating(modelBuilder);
-
             base.OnModelCreating(modelBuilder);
 
             // DateOnly converter (if you use DateOnly)

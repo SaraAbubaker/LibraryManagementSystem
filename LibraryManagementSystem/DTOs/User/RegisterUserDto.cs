@@ -22,8 +22,5 @@ namespace LibraryManagementSystem.DTOs.User
             ErrorMessage = "Password must be at least 8 characters, contain upper, lower case, and a number.")]
         public string Password { get; set; } = null!;
 
-        public int UserTypeId { get; set; }
-        public string UserRole { get; set; } = null!;
-
     }
 }

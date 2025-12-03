@@ -62,7 +62,7 @@ namespace LibraryManagementSystem.Services
             category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             category.LastModifiedByUserId = userId;
 
-            _categoryRepo.Update(category);
+            await _categoryRepo.UpdateAsync(category);
 
             return category.Adapt<CategoryDto>();
         }
@@ -87,14 +87,14 @@ namespace LibraryManagementSystem.Services
             {
                 book.CategoryId = -1; //Unknown
                 book.Category = unknownCategory;
-                _bookRepo.Update(book);
+                await _bookRepo.UpdateAsync(book);
             }
 
             category.IsArchived = true;
             category.ArchivedByUserId = archivedByUserId;
             category.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _categoryRepo.Update(category);
+            await _categoryRepo.UpdateAsync(category);
 
             return true;
         }

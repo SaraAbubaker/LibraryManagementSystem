@@ -9,19 +9,19 @@ namespace LibraryManagementSystemAPIs.Controllers
     [Route("api/[controller]")]
     public class AuthorsController : ControllerBase
     {
-        private readonly AuthorService Service;
+        private readonly AuthorService _service;
 
         public AuthorsController(AuthorService service)
         {
-            Service = service;
+            _service = service;
         }
 
         [HttpGet]
-        public IActionResult ListAuthors()
+        public async Task<IActionResult> ListAuthors()
         {
-            try 
-            { 
-                var result = Service.ListAuthors();
+            try
+            {
+                var result = await _service.ListAuthorsAsync();
                 return Ok(result);
             } 
             catch (Exception ex) 
@@ -31,11 +31,11 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetAuthorById(int id)
+        public async Task<IActionResult> GetAuthorById(int id)
         {
             try
             {
-                var author = Service.GetAuthorById(id);
+                var author = await _service.GetAuthorByIdAsync(id);
                 if (author == null) return NotFound();
 
                 var dto = author.Adapt<AuthorListDto>();
@@ -50,14 +50,12 @@ namespace LibraryManagementSystemAPIs.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(AuthorListDto), 201)]
         [ProducesResponseType(400)]
-        public IActionResult CreateAuthor(CreateAuthorDto dto)
+        public async Task<IActionResult> CreateAuthor(CreateAuthorDto dto)
         {
-            try 
+            try
             {
-                var author = Service.CreateAuthor(dto);
-                var resultDto = author.Adapt<AuthorListDto>();
-
-                return CreatedAtAction(nameof(GetAuthorById), new { id = resultDto.Id }, resultDto);
+                var author = await _service.CreateAuthorAsync(dto);
+                return CreatedAtAction(nameof(GetAuthorById), new { id = author.Id }, author);
             }
             catch (Exception ex) 
             { 
@@ -66,30 +64,31 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpPut]
-        public IActionResult EditAuthor(int id, UpdateAuthorDto dto)
+        public async Task<IActionResult> EditAuthor(int id, UpdateAuthorDto dto)
         {
-            try 
+            try
             {
                 if (id != dto.Id) return BadRequest("ID mismatch.");
 
-                var success = Service.EditAuthor(dto);
+                var success = await _service.EditAuthorAsync(dto);
                 if (!success) return NotFound();
 
                 return NoContent();
-            } 
-            catch (Exception ex) 
-            { 
+            }
+            catch (Exception ex)
+            {
                 return BadRequest(ex.Message);
             }
         }
 
         [HttpPut("archive {id}")]
-        public IActionResult ArchiveAuthor(int id, [FromQuery] int userId)
+        public async Task<IActionResult> ArchiveAuthor(int id, [FromQuery] int userId)
         {
             try
             {
-                var success = Service.ArchiveAuthor(id, userId);
+                var success = await _service.ArchiveAuthorAsync(id, userId);
                 if (!success) return NotFound();
+
                 return NoContent();
             }
             catch (Exception ex)

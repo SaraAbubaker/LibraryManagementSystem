@@ -39,7 +39,7 @@ namespace LibraryManagementSystem.Services
             copy.LastModifiedByUserId = currentUserId;
             copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Today);
 
-            _inventoryRepo.Update(copy);
+            await _inventoryRepo.UpdateAsync(copy);
 
             return true;
         }
@@ -76,7 +76,7 @@ namespace LibraryManagementSystem.Services
             copy.ArchivedByUserId = performedByUserId;
             copy.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _inventoryRepo.Update(copy);
+            await _inventoryRepo.UpdateAsync(copy);
 
             //Archive the book if no copies remain
             var anyLeft = (await _inventoryRepo.GetAllAsync())

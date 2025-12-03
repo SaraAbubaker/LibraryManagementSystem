@@ -1,6 +1,9 @@
 ﻿using LibraryManagementSystem.DTOs.User;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LibraryManagementSystem.Controllers
 {
@@ -16,11 +19,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult Register(RegisterUserDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> Register(RegisterUserDto dto)
         {
             try
             {
-                var result = Service.RegisterUser(dto, userId);
+                var result = await Service.RegisterUserAsync(dto);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -30,11 +33,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login(LoginDto dto)
+        public async Task<IActionResult> Login(LoginDto dto)
         {
             try
             {
-                var result = Service.LoginUser(dto);
+                var result = await Service.LoginUserAsync(dto);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -44,11 +47,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
             try
             {
-                var result = Service.GetUserById(id);
+                var result = await Service.GetUserByIdAsync(id);
                 return Ok(result);
             }
             catch (KeyNotFoundException)
@@ -58,11 +61,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
             try
             {
-                var result = Service.GetAllUsers();
+                var result = await Service.GetAllUsersAsync();
                 return Ok(result);
             }
             catch (Exception ex)

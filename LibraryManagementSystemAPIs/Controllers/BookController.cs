@@ -1,7 +1,8 @@
 ﻿using LibraryManagementSystem.DTOs.Book;
-using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace LibraryManagementSystemAPIs.Controllers
 {
@@ -9,20 +10,19 @@ namespace LibraryManagementSystemAPIs.Controllers
     [Route("api/[controller]")]
     public class BooksController : ControllerBase
     {
-        //Dependancy injection
-        private readonly BookService Service;
-        //Dependancy constructor
+        private readonly BookService _service;
+
         public BooksController(BookService service)
         {
-            Service = service;
+            _service = service;
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetDetails(int id)
+        public async Task<IActionResult> GetDetails(int id)
         {
             try
             {
-                var book = Service.GetBookDetails(id);
+                var book = await _service.GetBookDetailsAsync(id);
                 if (book == null) return NotFound();
                 return Ok(book);
             }
@@ -33,12 +33,12 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpGet("author/{authorId}")]
-        public IActionResult GetByAuthor(int authorId)
+        public async Task<IActionResult> GetByAuthor(int authorId)
         {
             try
             {
-                var book = Service.GetBooksByAuthor(authorId);
-                return Ok(book);
+                var books = await _service.GetBooksByAuthorAsync(authorId);
+                return Ok(books);
             }
             catch (Exception ex)
             {
@@ -47,12 +47,12 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpGet("category/{categoryId}")]
-        public IActionResult GetByCategory(int categoryId)
+        public async Task<IActionResult> GetByCategory(int categoryId)
         {
             try
             {
-                var book = Service.GetBooksByCategory(categoryId);
-                return Ok(book);
+                var books = await _service.GetBooksByCategoryAsync(categoryId);
+                return Ok(books);
             }
             catch (Exception ex)
             {
@@ -61,11 +61,11 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(CreateBookDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> Create(CreateBookDto dto, [FromQuery] int userId)
         {
             try
             {
-                var book = Service.CreateBook(dto, userId);
+                var book = await _service.CreateBookAsync(dto, userId);
                 return CreatedAtAction(nameof(GetDetails), new { id = book.Id }, book);
             }
             catch (Exception ex)
@@ -75,13 +75,13 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update(int id, UpdateBookDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> Update(int id, UpdateBookDto dto, [FromQuery] int userId)
         {
             try
             {
                 if (id != dto.Id) return BadRequest("ID mismatch.");
 
-                var success = Service.UpdateBook(dto, userId);
+                var success = await _service.UpdateBookAsync(dto, userId);
                 if (!success) return NotFound();
                 return NoContent();
             }
@@ -91,12 +91,12 @@ namespace LibraryManagementSystemAPIs.Controllers
             }
         }
 
-        [HttpPut("archive {id}")]
-        public IActionResult Archive(int id, [FromQuery] int userId)
+        [HttpPut("archive/{id}")]
+        public async Task<IActionResult> Archive(int id, [FromQuery] int userId)
         {
             try
             {
-                var success = Service.ArchiveBook(id, userId);
+                var success = await _service.ArchiveBookAsync(id, userId);
                 if (!success) return NotFound();
                 return NoContent();
             }
@@ -107,12 +107,12 @@ namespace LibraryManagementSystemAPIs.Controllers
         }
 
         [HttpGet("search")]
-        public IActionResult Search([FromQuery] SearchBookParamsDto dto)
+        public async Task<IActionResult> Search([FromQuery] SearchBookParamsDto dto)
         {
             try
             {
-                var book = Service.SearchBooks(dto);
-                return Ok(book);
+                var books = await _service.SearchBooksAsync(dto);
+                return Ok(books);
             }
             catch (Exception ex)
             {

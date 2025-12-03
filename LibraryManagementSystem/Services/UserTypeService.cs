@@ -69,7 +69,7 @@ namespace LibraryManagementSystem.Services
             userType.LastModifiedByUserId = userId;
             userType.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _userTypeRepo.Update(userType);
+            await _userTypeRepo.UpdateAsync(userType);
 
             return userType.Adapt<UserTypeDto>();
         }
@@ -88,7 +88,7 @@ namespace LibraryManagementSystem.Services
             userType.ArchivedByUserId = archivedByUserId;
             userType.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _userTypeRepo.Update(userType);
+            await _userTypeRepo.UpdateAsync(userType);
 
             return true;
         }

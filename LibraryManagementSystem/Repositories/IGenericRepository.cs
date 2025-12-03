@@ -7,7 +7,7 @@ namespace LibraryManagementSystem.Repositories
         Task<IEnumerable<T>> GetAllAsync();
         Task<T> GetByIdAsync(int id);
         Task AddAsync(T entity);
-        void Update(T entity);
-        void Archive(T entity);
+        Task UpdateAsync(T entity);
+        Task ArchiveAsync(T entity);
     }
 }

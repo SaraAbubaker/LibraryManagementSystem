@@ -36,26 +36,27 @@ namespace LibraryManagementSystem.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public void Update(T entity)
+        public async Task UpdateAsync(T entity)
         {
             _dbSet.Update(entity);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        public void Archive(T entity)
+        public async Task ArchiveAsync(T entity)
         {
             dynamic e = entity;
             try
             {
                 e.IsArchived = true;
                 _dbSet.Update(e);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
             {
                 throw new Exception($"Entity of type {typeof(T).Name} does not have an IsArchived property.");
             }
         }
+
 
     }
 }

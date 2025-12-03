@@ -1,6 +1,8 @@
 ﻿using LibraryManagementSystem.DTOs.Category;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace LibraryManagementSystem.Controllers
 {
@@ -8,19 +10,19 @@ namespace LibraryManagementSystem.Controllers
     [Route("api/[controller]")]
     public class CategoryController : ControllerBase
     {
-        private readonly CategoryService Service;
+        private readonly CategoryService _service;
 
         public CategoryController(CategoryService service)
         {
-            Service = service;
+            _service = service;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
             try
             {
-                var result = Service.GetAllCategories();
+                var result = await _service.GetAllCategoriesAsync();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -30,11 +32,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(CreateCategoryDto dto)
+        public async Task<IActionResult> Create(CreateCategoryDto dto)
         {
             try
             {
-                var created = Service.CreateCategory(dto);
+                var created = await _service.CreateCategoryAsync(dto);
                 return Ok(created);
             }
             catch (Exception ex)
@@ -44,11 +46,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPut]
-        public IActionResult Update(UpdateCategoryDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> Update(UpdateCategoryDto dto, [FromQuery] int userId)
         {
             try
             {
-                var updated = Service.UpdateCategory(dto, userId);
+                var updated = await _service.UpdateCategoryAsync(dto, userId);
 
                 if (updated == null)
                     return NotFound("Category not found.");
@@ -61,12 +63,12 @@ namespace LibraryManagementSystem.Controllers
             }
         }
 
-        [HttpPut("archive {id}")]
-        public IActionResult Archive(int id, [FromQuery] int userId)
+        [HttpPut("archive/{id}")]
+        public async Task<IActionResult> Archive(int id, [FromQuery] int userId)
         {
             try
             {
-                var success = Service.ArchiveCategory(id, userId);
+                var success = await _service.ArchiveCategoryAsync(id, userId);
 
                 if (!success)
                     return NotFound("Category not found.");

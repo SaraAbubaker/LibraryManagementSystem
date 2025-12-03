@@ -1,6 +1,8 @@
 ﻿using LibraryManagementSystem.DTOs.Publisher;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace LibraryManagementSystem.Controllers
 {
@@ -16,11 +18,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
             try
             {
-                var publishers = _service.GetAllPublishers();
+                var publishers = await _service.GetAllPublishersAsync();
                 return Ok(publishers);
             }
             catch (Exception ex)
@@ -30,11 +32,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
             try
             {
-                var publisher = _service.GetPublisherById(id);
+                var publisher = await _service.GetPublisherByIdAsync(id);
                 return Ok(publisher);
             }
             catch (Exception ex)
@@ -44,11 +46,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] CreatePublisherDto dto, [FromQuery] int createdByUserId)
+        public async Task<IActionResult> Create([FromBody] CreatePublisherDto dto, [FromQuery] int createdByUserId)
         {
             try
             {
-                var created = _service.CreatePublisher(dto, createdByUserId);
+                var created = await _service.CreatePublisherAsync(dto, createdByUserId);
                 return Ok(created);
             }
             catch (Exception ex)
@@ -58,11 +60,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update([FromBody] UpdatePublisherDto dto, int id, [FromQuery] int userId)
+        public async Task<IActionResult> Update([FromBody] UpdatePublisherDto dto, int id, [FromQuery] int userId)
         {
             try
             {
-                var updated = _service.UpdatePublisher(dto, userId, id);
+                var updated = await _service.UpdatePublisherAsync(dto, userId, id);
                 return Ok(updated);
             }
             catch (Exception ex)
@@ -72,11 +74,14 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPut("archive/{id}")]
-        public IActionResult Archive(int id, [FromQuery] int? userId = null)
+        public async Task<IActionResult> Archive(int id, [FromQuery] int? userId = null)
         {
             try
             {
-                var success = _service.ArchivePublisher(id, userId);
+                if (!userId.HasValue)
+                    return BadRequest("UserId is required to archive a publisher.");
+
+                var success = await _service.ArchivePublisherAsync(id, userId.Value);
                 return Ok("Publisher archived successfully.");
             }
             catch (Exception ex)

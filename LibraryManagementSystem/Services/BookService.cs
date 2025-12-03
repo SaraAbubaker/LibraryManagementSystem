@@ -126,7 +126,7 @@ namespace LibraryManagementSystem.Services
             book.LastModifiedByUserId = currentUserId;
             book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _bookRepo.Update(book);
+            await _bookRepo.UpdateAsync(book);
             return true;
         }
 
@@ -143,7 +143,7 @@ namespace LibraryManagementSystem.Services
             book.ArchivedByUserId = performedByUserId;
             book.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _bookRepo.Update(book);
+            await _bookRepo.UpdateAsync(book);
             return true;
         }
 
