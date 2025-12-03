@@ -55,7 +55,7 @@ namespace LibraryManagementSystem.Services
             return copies.Any();
         }
 
-        public InventoryRecord? GetAvailableCopy(int bookId)
+        public async Task<InventoryRecord?> GetAvailableCopyAsync(int bookId)
         {
             Validate.Positive(bookId, nameof(bookId));
             var copies = await Inventory.GetAvailableCopiesAsync(bookId);
@@ -106,7 +106,7 @@ namespace LibraryManagementSystem.Services
 
             _borrowRepo.Update(record);
 
-            return Inventory.ReturnCopy(record.InventoryRecordId, currentUserId);
+            return await Inventory.ReturnCopyAsync(record.InventoryRecordId, currentUserId);
         }
 
 
