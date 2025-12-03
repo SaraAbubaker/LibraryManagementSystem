@@ -45,17 +45,27 @@ namespace LibraryManagementSystem.Services
                 throw new InvalidOperationException("Email already registered.");
 
             //Normal user
-            var userType = await _userTypeRepo.GetByIdAsync(2);
+            var userType = (await _userTypeRepo.GetAllAsync())
+                   .FirstOrDefault(ut => ut.Role == "Normal");
+
+            if (userType == null)
+                throw new InvalidOperationException("Default user type 'Normal' not found in the database.");
 
             var user = dto.Adapt<User>();
             user.Username = usernameNormalized;
             user.Email = emailInput;
             user.UserTypeId = userType.Id;
             user.BorrowRecords = new List<BorrowRecord>();
-            user.CreatedByUserId = null;  //No creator for self-registration
             user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
+            user.IsArchived = false;
 
             await _userRepo.AddAsync(user);
+
+            user.CreatedByUserId = user.Id;
+            user.LastModifiedByUserId = user.Id;
+            user.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
+
+            await _userRepo.UpdateAsync(user);
 
             var outDto = user.Adapt<UserDto>();
             outDto.UserTypeId = user.UserTypeId;
@@ -63,6 +73,8 @@ namespace LibraryManagementSystem.Services
             outDto.BorrowedBooksCount = 0;
             outDto.CreatedByUserId = user.CreatedByUserId;
             outDto.CreatedDate = user.CreatedDate;
+            outDto.LastModifiedByUserId = user.LastModifiedByUserId;
+            outDto.LastModifiedDate = user.LastModifiedDate;
 
             return outDto;
         }

@@ -94,7 +94,7 @@ namespace LibraryManagementSystem.Services
             author.Name = dto.Name;
             author.Email = dto.Email;
 
-            _authorRepo.Update(author);
+            await _authorRepo.UpdateAsync(author);
 
             return true;
         }
@@ -112,7 +112,7 @@ namespace LibraryManagementSystem.Services
             foreach (var book in books)
             {
                 book.AuthorId = -1; // Unknown
-                _bookRepo.Update(book);
+                await _bookRepo.UpdateAsync(book);
             }
 
             author.Name = "Unknown";
@@ -121,7 +121,7 @@ namespace LibraryManagementSystem.Services
             author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             author.ArchivedByUserId = performedByUserId;
 
-            _authorRepo.Update(author);
+            await _authorRepo.UpdateAsync(author);
             return true;
         }
     }

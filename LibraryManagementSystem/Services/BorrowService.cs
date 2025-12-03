@@ -74,7 +74,7 @@ namespace LibraryManagementSystem.Services
                 throw new ConflictException("Inventory copy is not available.");
 
             copy.IsAvailable = false;
-            _inventoryRepo.Update(copy);
+            await _inventoryRepo.UpdateAsync(copy);
 
             var borrow = new BorrowRecord
             {
@@ -104,7 +104,7 @@ namespace LibraryManagementSystem.Services
             record.LastModifiedByUserId = currentUserId;
             record.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _borrowRepo.Update(record);
+            await _borrowRepo.UpdateAsync(record);
 
             return await Inventory.ReturnCopyAsync(record.InventoryRecordId, currentUserId);
         }

@@ -29,10 +29,13 @@ namespace LibraryManagementSystem.Services
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Name, "Publisher name");
 
-            var publisher = dto.Adapt<Publisher>();
-            publisher.CreatedByUserId = createdByUserId;
-            publisher.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
-            publisher.IsArchived = false;
+            var publisher = new Publisher
+            {
+                Name = dto.Name,
+                CreatedByUserId = createdByUserId,
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                IsArchived = false
+            };
 
             //repository handles savechanges 
             await _publisherRepo.AddAsync(publisher);
@@ -84,7 +87,7 @@ namespace LibraryManagementSystem.Services
             publisher.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             publisher.LastModifiedByUserId = userId;
 
-            _publisherRepo.Update(publisher);
+            await _publisherRepo.UpdateAsync(publisher);
 
             var publisherDto = publisher.Adapt<PublisherDto>();
             publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
@@ -106,7 +109,7 @@ namespace LibraryManagementSystem.Services
             publisher.ArchivedByUserId = archivedByUserId;
             publisher.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _publisherRepo.Update(publisher);
+            await _publisherRepo.UpdateAsync(publisher);
 
             return true;
         }
