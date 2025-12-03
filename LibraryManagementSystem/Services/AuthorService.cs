@@ -107,7 +107,7 @@ namespace LibraryManagementSystem.Services
             author.Name = "Unknown";
             author.Email = string.Empty;
             author.IsArchived = true;
-            author.ArchivedDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             author.ArchivedByUserId = performedByUserId;
 
             _context.SaveChanges();

@@ -18,7 +18,7 @@ namespace LibraryManagementSystem.Models
 
         public static ValidationResult? ValidatePublishDate(DateOnly date, ValidationContext context)
         {
-            if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+            if (date > DateOnly.FromDateTime(DateTime.Now))
                 return new ValidationResult("Publish date cannot be in the future.");
             return ValidationResult.Success;
         }
