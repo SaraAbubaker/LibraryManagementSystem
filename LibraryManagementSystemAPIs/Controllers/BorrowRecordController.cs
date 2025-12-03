@@ -1,7 +1,8 @@
 ﻿using LibraryManagementSystem.DTOs.BorrowRecord;
-using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Services;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace LibraryManagementSystem.Controllers
 {
@@ -9,19 +10,19 @@ namespace LibraryManagementSystem.Controllers
     [Route("api/[controller]")]
     public class BorrowRecordController : ControllerBase
     {
-        private readonly BorrowService Service;
+        private readonly BorrowService _service;
 
         public BorrowRecordController(BorrowService service)
         {
-            Service = service;
+            _service = service;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
             try
             {
-                var result = Service.GetBorrowDetails();
+                var result = await _service.GetBorrowDetailsAsync();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -31,11 +32,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost("borrow")]
-        public IActionResult BorrowBook(RequestBorrowDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> BorrowBook(RequestBorrowDto dto, [FromQuery] int userId)
         {
             try
             {
-                var borrow = Service.BorrowBook(dto, userId);
+                var borrow = await _service.BorrowBookAsync(dto, userId);
                 return Ok(borrow);
             }
             catch (Exception ex)
@@ -44,13 +45,14 @@ namespace LibraryManagementSystem.Controllers
             }
         }
 
-        [HttpPost("return/{id}")]
-        public IActionResult ReturnBook(int id, [FromQuery] int userId)
+        [HttpPost("return/{borrowRecordId}")]
+        public async Task<IActionResult> ReturnBook(int borrowRecordId, [FromQuery] int userId)
         {
             try
             {
-                var result = Service.GetBorrowDetails();
-                return Ok(result);
+                var success = await _service.ReturnBookAsync(borrowRecordId, userId);
+                if (!success) return NotFound();
+                return Ok(new { Message = "Book returned successfully." });
             }
             catch (Exception ex)
             {
@@ -59,18 +61,17 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpGet("overdue")]
-        public IActionResult GetOverdue()
+        public async Task<IActionResult> GetOverdue()
         {
             try
             {
-                var result = Service.GetOverdueRecords();
+                var result = await _service.GetOverdueRecordsAsync();
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
-
         }
     }
 }
