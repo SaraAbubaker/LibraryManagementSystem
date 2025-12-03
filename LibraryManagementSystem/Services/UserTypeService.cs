@@ -4,6 +4,7 @@ using LibraryManagementSystem.DTOs.UserType;
 using LibraryManagementSystem.Exceptions;
 using LibraryManagementSystem.Helpers;
 using LibraryManagementSystem.Models;
+using LibraryManagementSystem.Repositories;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -13,11 +14,11 @@ namespace LibraryManagementSystem.Services
 {
     public class UserTypeService
     {
-        private readonly LibraryContext _context;
+        private readonly IGenericRepository<UserType> _userTypeRepo;
 
-        public UserTypeService(LibraryContext context)
+        public UserTypeService(IGenericRepository<UserType> userTypeRepo)
         {
-            _context = context;
+            _userTypeRepo = userTypeRepo;
         }
 
         //CRUD
@@ -31,15 +32,14 @@ namespace LibraryManagementSystem.Services
             userType.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
             userType.IsArchived = false;
 
-            _context.UserTypes.Add(userType);
-            _context.SaveChanges();
+            _userTypeRepo.Add(userType);
 
             return userType.Adapt<UserTypeDto>();
         }
 
         public List<UserTypeDto> GetAllUserTypes()
         {
-            var userTypes = _context.UserTypes
+            var userTypes = _userTypeRepo.GetAll()
                 .Where(u => !u.IsArchived)
                 .ToList();
 
@@ -50,8 +50,7 @@ namespace LibraryManagementSystem.Services
         {
             Validate.Positive(id, "Id");
 
-            var userType = _context.UserTypes.FirstOrDefault(u => u.Id == id);
-            Validate.Exists(userType, $"UserType with id {id}");
+            var userType = _userTypeRepo.GetById(id);
 
             return userType!.Adapt<UserTypeDto>();
         }
@@ -62,33 +61,29 @@ namespace LibraryManagementSystem.Services
             Validate.NotEmpty(dto.Role, "User type role");
             Validate.Positive(userTypeId, "User type id");
 
-            var userType = _context.UserTypes.FirstOrDefault(u => u.Id == userTypeId);
-            Validate.Exists(userType, $"UserType with id {userTypeId}");
+            var userType = _userTypeRepo.GetById(userTypeId);
 
-            userType!.Role = dto.Role;
+            userType.Role = dto.Role;
             userType.LastModifiedByUserId = userId;
             userType.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _context.SaveChanges();
+            _userTypeRepo.Update(userType);
 
             return userType.Adapt<UserTypeDto>();
         }
 
-        public bool ArchiveUserType(int id, int? archivedByUserId = null)
+        public bool ArchiveUserType(int id, int archivedByUserId)
         {
-            Validate.Positive(id, "Id");
+            var userType = _userTypeRepo.GetById(id);
 
-            var userType = _context.UserTypes.FirstOrDefault(u => u.Id == id);
-            Validate.Exists(userType, $"UserType with id {id}");
-
-            if (userType!.IsArchived)
+            if (userType.IsArchived)
                 throw new ConflictException($"UserType with id {id} is already archived.");
 
             userType.IsArchived = true;
             userType.ArchivedByUserId = archivedByUserId;
             userType.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _context.SaveChanges();
+            _userTypeRepo.Update(userType);
 
             return true;
         }

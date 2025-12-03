@@ -92,7 +92,7 @@ namespace LibraryManagementSystem.Services
             return publisherDto;
         }
 
-        public bool ArchivePublisher(int id, int? archivedByUserId = null)
+        public bool ArchivePublisher(int id, int archivedByUserId)
         {
             var publisher = _publisherRepo.GetById(id);
 
