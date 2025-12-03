@@ -27,33 +27,36 @@ namespace LibraryManagementSystem.Services
 
 
         //CRUD
-        public CategoryDto CreateCategory(CreateCategoryDto dto)
+        public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Name, "Category name");
 
             var category = dto.Adapt<Category>();
 
-            _categoryRepo.Add(category);
+            await _categoryRepo.AddAsync(category);
 
             return category.Adapt<CategoryDto>();
         }
 
-        public List<CategoryDto> GetAllCategories()
+        public async Task<List<CategoryDto>> GetAllCategoriesAsync()
         {
-            return _categoryRepo.GetAll()
+            var categories = await _categoryRepo.GetAllAsync();
+
+            return categories
                 .Where(c => !c.IsArchived)
                 .Select(c => c.Adapt<CategoryDto>())
                 .ToList();
         }
 
-        public CategoryDto UpdateCategory(UpdateCategoryDto dto, int userId)
+        public async Task<CategoryDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Name, "Category name");
             Validate.Positive(dto.Id, "Id");
+            Validate.Positive(userId, nameof(userId));
 
-            var category = _categoryRepo.GetById(dto.Id);
+            var category = await _categoryRepo.GetByIdAsync(dto.Id);
 
             category!.Name = dto.Name;
             category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
@@ -65,19 +68,25 @@ namespace LibraryManagementSystem.Services
         }
 
         //Archives category & Moves books out of it
-        public bool ArchiveCategory(int id, int? archivedByUserId = null)
+        public async Task<bool> ArchiveCategoryAsync(int id, int? archivedByUserId = null)
         {
             Validate.Positive(id, "id");
 
-            var category = _categoryRepo.GetById(id);
+            var category = await _categoryRepo.GetByIdAsync(id);
 
             if (category!.IsArchived)
                 throw new ConflictException($"Category with id {id} is already archived.");
 
-            foreach (var book in _bookRepo.GetAll().Where(b => b.CategoryId == id))
+            var books = (await _bookRepo.GetAllAsync())
+                .Where(b => b.CategoryId == id)
+                .ToList();
+
+            var unknownCategory = await _categoryRepo.GetByIdAsync(-1);
+
+            foreach (var book in books)
             {
                 book.CategoryId = -1; //Unknown
-                book.Category = _categoryRepo.GetById(0); //Unknown category
+                book.Category = unknownCategory;
                 _bookRepo.Update(book);
             }
 

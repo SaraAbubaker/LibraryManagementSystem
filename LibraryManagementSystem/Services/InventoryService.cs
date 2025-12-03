@@ -28,12 +28,12 @@ namespace LibraryManagementSystem.Services
 
 
         //Available = true + audit fields set
-        public bool ReturnCopy(int inventoryRecordId, int currentUserId)
+        public async Task<bool> ReturnCopyAsync(int inventoryRecordId, int currentUserId)
         {
             Validate.Positive(inventoryRecordId, "inventoryRecordId");
             Validate.Positive(currentUserId, "currentUserId");
 
-            var copy = _inventoryRepo.GetById(inventoryRecordId);
+            var copy = await _inventoryRepo.GetByIdAsync(inventoryRecordId);
 
             copy.IsAvailable = true;
             copy.LastModifiedByUserId = currentUserId;
@@ -45,7 +45,7 @@ namespace LibraryManagementSystem.Services
         }
 
         //Create, Remove, Read
-        public InventoryRecord CreateCopy(int bookId, string copyCode, int createdByUserId)
+        public async Task<InventoryRecord> CreateCopyAsync(int bookId, string copyCode, int createdByUserId)
         {
             Validate.Positive(bookId, "bookId");
             Validate.NotEmpty(copyCode, "copyCode");
@@ -60,18 +60,18 @@ namespace LibraryManagementSystem.Services
                 CreatedDate = DateOnly.FromDateTime(DateTime.Now)
             };
 
-            _inventoryRepo.Add(record);
+            await _inventoryRepo.AddAsync(record);
 
             return record;
         }
 
-        public bool RemoveCopy(int inventoryRecordId, int performedByUserId)
+        public async Task<bool> RemoveCopyAsync(int inventoryRecordId, int performedByUserId)
         {
             Validate.Positive(inventoryRecordId, "inventoryRecordId");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            var copy = _inventoryRepo.GetById(inventoryRecordId);
-            
+            var copy = await _inventoryRepo.GetByIdAsync(inventoryRecordId);
+
             copy.IsArchived = true;
             copy.ArchivedByUserId = performedByUserId;
             copy.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
@@ -79,28 +79,34 @@ namespace LibraryManagementSystem.Services
             _inventoryRepo.Update(copy);
 
             //Archive the book if no copies remain
-            var anyLeft = _inventoryRepo.GetAll()
+            var anyLeft = (await _inventoryRepo.GetAllAsync())
                 .Any(r => r.BookId == copy.BookId && !r.IsArchived);
             if (!anyLeft)
             {
-                BookService.ArchiveBook(copy.BookId, performedByUserId);
+                await BookService.ArchiveBookAsync(copy.BookId, performedByUserId);
             }
 
             return true;
         }
 
-        public List<InventoryRecord> ListCopiesForBook(int bookId)
+        public async Task<List<InventoryRecord>> ListCopiesForBookAsync(int bookId)
         {
-            return _inventoryRepo.GetAll()
+            Validate.Positive(bookId, nameof(bookId));
+
+            var all = await _inventoryRepo.GetAllAsync();
+            return all
                 .Where(r => r.BookId == bookId)
                 .OrderBy(r => r.Id)
                 .ToList();
         }
 
-        public List<InventoryRecord> GetAvailableCopies(int bookId)
+        public async Task<List<InventoryRecord>> GetAvailableCopiesAsync(int bookId)
         {
-            return _inventoryRepo.GetAll()
-                .Where(r => r.BookId == bookId && r.IsAvailable)
+            Validate.Positive(bookId, nameof(bookId));
+
+            var all = await _inventoryRepo.GetAllAsync();
+            return all
+                .Where(r => r.BookId == bookId && r.IsAvailable && !r.IsArchived)
                 .ToList();
         }
 

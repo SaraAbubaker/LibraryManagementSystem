@@ -24,7 +24,7 @@ namespace LibraryManagementSystem.Services
 
 
         //CRUD
-        public PublisherDto CreatePublisher(CreatePublisherDto dto, int createdByUserId)
+        public async Task<PublisherDto> CreatePublisherAsync(CreatePublisherDto dto, int createdByUserId)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Name, "Publisher name");
@@ -35,7 +35,7 @@ namespace LibraryManagementSystem.Services
             publisher.IsArchived = false;
 
             //repository handles savechanges 
-            _publisherRepo.Add(publisher); 
+            await _publisherRepo.AddAsync(publisher);
 
             var publisherDto = publisher.Adapt<PublisherDto>();
             publisherDto.InventoryCount = publisher.InventoryRecords.Count;
@@ -43,12 +43,11 @@ namespace LibraryManagementSystem.Services
             return publisherDto;
         }
 
-        public List<PublisherDto> GetAllPublishers()
+        public async Task<List<PublisherDto>> GetAllPublishersAsync()
         {
-            var publishers = _publisherRepo.GetAll()
+            var publishers = (await _publisherRepo.GetAllAsync())
                 .Where(p => !p.IsArchived)
                 .ToList();
-
 
             var dtos = publishers.Adapt<List<PublisherDto>>();
 
@@ -60,41 +59,45 @@ namespace LibraryManagementSystem.Services
             return dtos;
         }
 
-        public PublisherDto GetPublisherById(int id)
+        public async Task<PublisherDto> GetPublisherByIdAsync(int id)
         {
             Validate.Positive(id, "Id");
 
-            var publisher = _publisherRepo.GetById(id);
+            var publisher = await _publisherRepo.GetByIdAsync(id);
 
-            var dto = publisher!.Adapt<PublisherDto>();
-            dto.InventoryCount = publisher!.InventoryRecords.Count;
+            var dto = publisher.Adapt<PublisherDto>();
+            dto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
 
             return dto;
         }
 
-        public PublisherDto UpdatePublisher(UpdatePublisherDto dto, int userId, int publisherId)
+        public async Task<PublisherDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Name, "Publisher name");
             Validate.Positive(publisherId, "Publisher id");
+            Validate.Positive(userId, nameof(userId));
 
-            var publisher = _publisherRepo.GetById(publisherId);
+            var publisher = await _publisherRepo.GetByIdAsync(publisherId);
 
-            publisher!.Name = dto.Name;
+            publisher.Name = dto.Name;
             publisher.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             publisher.LastModifiedByUserId = userId;
 
             _publisherRepo.Update(publisher);
 
             var publisherDto = publisher.Adapt<PublisherDto>();
-            publisherDto.InventoryCount = publisher.InventoryRecords.Count;
+            publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
 
             return publisherDto;
         }
 
-        public bool ArchivePublisher(int id, int archivedByUserId)
+        public async Task<bool> ArchivePublisherAsync(int id, int archivedByUserId)
         {
-            var publisher = _publisherRepo.GetById(id);
+            Validate.Positive(id, "Id");
+            Validate.Positive(archivedByUserId, nameof(archivedByUserId));
+
+            var publisher = await _publisherRepo.GetByIdAsync(id);
 
             if (publisher.IsArchived)
                 throw new ConflictException($"Publisher with id {id} is already archived.");

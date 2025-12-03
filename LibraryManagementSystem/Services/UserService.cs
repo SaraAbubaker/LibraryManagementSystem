@@ -26,7 +26,7 @@ namespace LibraryManagementSystem.Services
         }
 
 
-        public UserDto RegisterUser(RegisterUserDto dto)
+        public async Task<UserDto> RegisterUserAsync(RegisterUserDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.Username, "Username");
@@ -36,24 +36,26 @@ namespace LibraryManagementSystem.Services
             var usernameNormalized = dto.Username.Trim();
             var emailInput = dto.Email.Trim();
 
-            if (_userRepo.GetAll().Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
+            var users = await _userRepo.GetAllAsync();
+
+            if (users.Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Username already taken.");
 
-            if (_userRepo.GetAll().Any(u => u.Email == emailInput))
+            if (users.Any(u => string.Equals(u.Email, emailInput, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Email already registered.");
 
             //Normal user
-            var userType = _userTypeRepo.GetById(2); 
+            var userType = await _userTypeRepo.GetByIdAsync(2);
 
             var user = dto.Adapt<User>();
             user.Username = usernameNormalized;
             user.Email = emailInput;
             user.UserTypeId = userType.Id;
             user.BorrowRecords = new List<BorrowRecord>();
-            user.CreatedByUserId = null;  // No creator for self-registration
+            user.CreatedByUserId = null;  //No creator for self-registration
             user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _userRepo.Add(user);
+            await _userRepo.AddAsync(user);
 
             var outDto = user.Adapt<UserDto>();
             outDto.UserTypeId = user.UserTypeId;
@@ -65,7 +67,7 @@ namespace LibraryManagementSystem.Services
             return outDto;
         }
 
-        public UserDto LoginUser(LoginDto dto)
+        public async Task<UserDto> LoginUserAsync(LoginDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.NotEmpty(dto.UsernameOrEmail, "UsernameOrEmail");
@@ -74,37 +76,37 @@ namespace LibraryManagementSystem.Services
             var input = dto.UsernameOrEmail.Trim();
             var password = dto.Password.Trim();
 
-            var user = _userRepo.GetAll()
-                .FirstOrDefault(u =>
+            var users = await _userRepo.GetAllAsync();
+            var user = users.FirstOrDefault(u =>
                 string.Equals(u.Username, input, StringComparison.OrdinalIgnoreCase)
-                || u.Email == input
-                );
+                || string.Equals(u.Email, input, StringComparison.OrdinalIgnoreCase)
+            );
 
             if (user == null || user.Password != password)
                 throw new BadRequestException("Invalid username/email or password.");
 
             var result = user.Adapt<UserDto>();
-            result.BorrowedBooksCount = user.BorrowRecords.Count;
+            result.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
 
             return result;
         }
 
-        public UserDto GetUserById(int id)
+        public async Task<UserDto> GetUserByIdAsync(int id)
         {
             Validate.Positive(id, "id");
 
-            var user = _userRepo.GetById(id);
+            var user = await _userRepo.GetByIdAsync(id);
 
             var dto = user.Adapt<UserDto>();
-            dto.UserRole = user!.UserType!.Role;
+            dto.UserRole = user.UserType?.Role ?? "Unknown";
             dto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
 
             return dto;
         }
 
-        public List<UserDto> GetAllUsers()
+        public async Task<List<UserDto>> GetAllUsersAsync()
         {
-            var users = _userRepo.GetAll().ToList();
+            var users = (await _userRepo.GetAllAsync()).ToList();
 
             var dtos = users.Adapt<List<UserDto>>();
 

@@ -25,7 +25,7 @@ namespace LibraryManagementSystem.Services
         }
 
         //CRUD
-        public Book CreateBook(CreateBookDto dto, int currentUserId)
+        public async Task<Book> CreateBookAsync(CreateBookDto dto, int currentUserId)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.Positive(currentUserId, "currentUserId");
@@ -35,14 +35,15 @@ namespace LibraryManagementSystem.Services
             book.CreatedByUserId = currentUserId;
             book.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            _bookRepo.Add(book);
+            await _bookRepo.AddAsync(book);
 
             return book;
         }
 
-        public BookListDto? GetBookDetails(int bookId)
+        public async Task<BookListDto?> GetBookDetailsAsync(int bookId)
         {
-            var book = _bookRepo.GetById(bookId);
+            var book = await _bookRepo.GetByIdAsync(bookId);
+            if (book == null || book.IsArchived) return null;
 
             var dto = book.Adapt<BookListDto>();
             dto.AuthorName = book.Author?.Name ?? "Unknown";
@@ -53,9 +54,9 @@ namespace LibraryManagementSystem.Services
             return dto;
         }
 
-        public List<BookListDto> GetBooksByAuthor(int authorId)
+        public async Task<List<BookListDto>> GetBooksByAuthorAsync(int authorId)
         {
-            var books = _bookRepo.GetAll()
+            var books = (await _bookRepo.GetAllAsync())
                 .Where(b => b.AuthorId == authorId && !b.IsArchived)
                 .ToList();
 
@@ -73,37 +74,39 @@ namespace LibraryManagementSystem.Services
             .ToList();
         }
 
-        public List<BookListDto> GetBooksByCategory(int categoryId)
+        public async Task<List<BookListDto>> GetBooksByCategoryAsync(int categoryId)
         {
-            var anyBookWithCategory = _bookRepo.GetAll().Any(b => b.CategoryId == categoryId && !b.IsArchived);
-            if (!anyBookWithCategory)
-                categoryId = -1; // unknown
+            var booksAll = await _bookRepo.GetAllAsync();
 
-            var books = _bookRepo.GetAll()
+            var anyBookWithCategory = booksAll.Any(b => b.CategoryId == categoryId && !b.IsArchived);
+            if (!anyBookWithCategory)
+                categoryId = -1; //Unknown
+
+            var books = booksAll
                 .Where(b => b.CategoryId == categoryId && !b.IsArchived)
                 .ToList();
 
-            var dtos = books.Select(b => new BookListDto
-            {
-                Id = b.Id,
-                Title = b.Title,
-                PublishDate = b.PublishDate,
-                AuthorName = b.Author?.Name ?? "Unknown",
-                CategoryName = b.Category?.Name ?? "Unknown",
-                PublisherName = b.Publisher?.Name ?? "Unknown",
-                IsAvailable = b.InventoryRecords?.Any(r => r.IsAvailable) ?? false
-            }).ToList();
-
-            return dtos;
+            return books
+                .Select(b => new BookListDto
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    PublishDate = b.PublishDate,
+                    AuthorName = b.Author?.Name ?? "Unknown",
+                    CategoryName = b.Category?.Name ?? "Unknown",
+                    PublisherName = b.Publisher?.Name ?? "Unknown",
+                    IsAvailable = b.InventoryRecords?.Any(r => r.IsAvailable) ?? false
+                })
+                .ToList();
         }
 
-        public bool UpdateBook(UpdateBookDto dto, int currentUserId)
+        public async Task<bool> UpdateBookAsync(UpdateBookDto dto, int currentUserId)
         {
             Validate.NotNull(dto, nameof(dto));
             Validate.Positive(dto.Id, "Id");
             Validate.Positive(currentUserId, "currentUserId");
 
-            var book = _bookRepo.GetById(dto.Id);
+            var book = await _bookRepo.GetByIdAsync(dto.Id);
             if (book == null)
                 throw new NotFoundException($"Book with id {dto.Id} not found.");
 
@@ -127,12 +130,12 @@ namespace LibraryManagementSystem.Services
             return true;
         }
 
-        public bool ArchiveBook(int bookId, int performedByUserId)
+        public async Task<bool> ArchiveBookAsync(int bookId, int performedByUserId)
         {
             Validate.Positive(bookId, "bookId");
             Validate.Positive(performedByUserId, "performedByUserId");
 
-            var book = _bookRepo.GetById(bookId);
+            var book = await _bookRepo.GetByIdAsync(bookId);
             if (book == null)
                 throw new NotFoundException($"Book with id {bookId} not found.");
 
@@ -145,13 +148,14 @@ namespace LibraryManagementSystem.Services
         }
 
         //Search method (filter, sort, pagination)
-        public List<BookListDto> SearchBooks(SearchBookParamsDto dto)
+        public async Task<List<BookListDto>> SearchBooksAsync(SearchBookParamsDto dto)
         {
             Validate.NotNull(dto, nameof(dto));
 
             var skip = (Math.Max(1, dto.Page) - 1) * Math.Max(1, dto.PageSize);
 
-            var books = _bookRepo.GetAll().AsQueryable();
+            var booksAll = await _bookRepo.GetAllAsync();
+            var books = booksAll.AsQueryable();
 
             //Search
             if (!string.IsNullOrWhiteSpace(dto.SearchParam))

@@ -17,23 +17,23 @@ namespace LibraryManagementSystem.Repositories
         }
 
         //Methods from IGenericRepository<T>
-        public IEnumerable<T> GetAll()
+        public async Task<IEnumerable<T>> GetAllAsync()
         {
-            return _dbSet.ToList();
+            return await _dbSet.ToListAsync();
         }
 
-        public T GetById(int id)
+        public async Task<T> GetByIdAsync(int id)
         {
-            var entity = _dbSet.Find(id);
+            var entity = await _dbSet.FindAsync(id);
             if (entity == null)
                 throw new Exception($"Entity of type {typeof(T).Name} with id {id} not found.");
             return entity;
         }
 
-        public void Add(T entity)
+        public async Task AddAsync(T entity)
         {
-            _dbSet.Add(entity);
-            _context.SaveChanges();
+            await _dbSet.AddAsync(entity);
+            await _context.SaveChangesAsync();
         }
 
         public void Update(T entity)
@@ -45,9 +45,16 @@ namespace LibraryManagementSystem.Repositories
         public void Archive(T entity)
         {
             dynamic e = entity;
-            e.IsArchived = true;
-            _dbSet.Update(e);
-            _context.SaveChanges();
+            try
+            {
+                e.IsArchived = true;
+                _dbSet.Update(e);
+                _context.SaveChanges();
+            }
+            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
+            {
+                throw new Exception($"Entity of type {typeof(T).Name} does not have an IsArchived property.");
+            }
         }
 
     }
