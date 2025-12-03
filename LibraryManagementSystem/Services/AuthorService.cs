@@ -101,7 +101,7 @@ namespace LibraryManagementSystem.Services
             var books = _context.Books.Where(b => b.AuthorId == id).ToList();
             foreach (var book in books)
             {
-                book.AuthorId = 0; // Unknown Author
+                book.AuthorId = -1; // Unknown Author
             }
 
             author.Name = "Unknown";

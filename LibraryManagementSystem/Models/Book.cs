@@ -30,9 +30,9 @@ namespace LibraryManagementSystem.Models
 
 
         //Foreign Key Relation
-        public int AuthorId { get; set; } = 0;
-        public int CategoryId { get; set; } = 0;
-        public int PublisherId { get; set; } = 0;
+        public int AuthorId { get; set; } = -1;
+        public int CategoryId { get; set; } = -1;
+        public int PublisherId { get; set; } = -1;
 
         //Easy access to Category.Name
         public Author? Author { get; set; }

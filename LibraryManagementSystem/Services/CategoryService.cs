@@ -73,7 +73,7 @@ namespace LibraryManagementSystem.Services
 
             foreach (var book in _context.Books.Where(b => b.CategoryId == id))
             {
-                book.CategoryId = 0; // Unknown
+                book.CategoryId = -1; // Unknown
                 book.Category = _context.Categories.First(c => c.Id == 0);
             }
 
