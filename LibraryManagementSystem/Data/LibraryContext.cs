@@ -1,10 +1,13 @@
 ﻿using LibraryManagementSystem.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace LibraryManagementSystem.Data
 {
     public class LibraryContext : DbContext
     {
+        public LibraryContext(DbContextOptions<LibraryContext> options) : base(options) { }
+
         public DbSet<Book> Books { get; set; }
         public DbSet<Author> Authors { get; set; }
         public DbSet<Category> Categories { get; set; }
@@ -16,12 +19,36 @@ namespace LibraryManagementSystem.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer("Server=.;Database=LibraryDb;Trusted_Connection=True;");
+            optionsBuilder.UseSqlServer("Server=(localdb)\\ProjectModels;Database=LibraryDB;Trusted_Connection=True;");
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            base.OnModelCreating(modelBuilder);
+
+            // DateOnly converter (if you use DateOnly)
+            var dateOnlyConverter = new ValueConverter<DateOnly, DateTime>(
+                d => d.ToDateTime(TimeOnly.MinValue),
+                dt => DateOnly.FromDateTime(dt)
+            );
+
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                var clrType = entityType.ClrType;
+                if (clrType == null) continue;
+
+                var dateOnlyProps = clrType.GetProperties()
+                    .Where(p => p.PropertyType == typeof(DateOnly));
+                foreach (var prop in dateOnlyProps)
+                {
+                    modelBuilder.Entity(clrType)
+                        .Property(prop.Name)
+                        .HasConversion(dateOnlyConverter);
+                }
+            }
+
 
             #region Relationships
 
@@ -100,23 +127,23 @@ namespace LibraryManagementSystem.Data
 
             //Seeding
             modelBuilder.Entity<Author>().HasData(
-                new Author { Id = 0, Name = "Unknown", Email = string.Empty, CreatedDate = today });
+                new Author { Id = -1, Name = "Unknown", Email = string.Empty, CreatedDate = today });
 
             modelBuilder.Entity<Category>().HasData(
-                new Category { Id = 0, Name = "Unknown", CreatedDate = today });
+                new Category { Id = -1, Name = "Unknown", CreatedDate = today });
 
             modelBuilder.Entity<Publisher>().HasData
-                (new Publisher { Id = 0, Name = "Unknown", CreatedDate = today });
+                (new Publisher { Id = -1, Name = "Unknown", CreatedDate = today });
 
             modelBuilder.Entity<UserType>().HasData(
-                new UserType { Id = 1, Role = "Admin", CreatedDate = today },
-                new UserType { Id = 2, Role = "Normal", CreatedDate = today }
+                new UserType { Id = -1, Role = "Admin", CreatedDate = today },
+                new UserType { Id = -2, Role = "Normal", CreatedDate = today }
             );
 
             //Default new users to Normal role
             modelBuilder.Entity<User>()
                 .Property(u => u.UserTypeId)
-                .HasDefaultValue(2);
+                .HasDefaultValue(-2);
         }
     }
 }

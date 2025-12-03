@@ -93,7 +93,7 @@ namespace LibraryManagementSystem.Services
             var category = _context.Categories.FirstOrDefault(c => c.Id == categoryId);
 
             if (category == null || category.IsArchived)
-                categoryId = 0; // unknown
+                categoryId = -1; // unknown
 
             var books = _context.Books
                 .Include(b => b.Author)

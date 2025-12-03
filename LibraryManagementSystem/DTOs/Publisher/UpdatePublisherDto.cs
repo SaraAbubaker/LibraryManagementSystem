@@ -7,6 +7,8 @@ namespace LibraryManagementSystem.DTOs.Publisher
 {
     public class UpdatePublisherDto
     {
+        public int Id { get; set; }
+
         [Required]
         [StringLength(200, MinimumLength = 1)]
         public string Name { get; set; } = null!;
