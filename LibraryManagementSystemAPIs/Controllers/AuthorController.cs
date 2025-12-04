@@ -50,27 +50,36 @@ namespace LibraryManagementSystemAPIs.Controllers
         [HttpPost]
         [ProducesResponseType(typeof(AuthorListDto), 201)]
         [ProducesResponseType(400)]
-        public async Task<IActionResult> CreateAuthor(CreateAuthorDto dto)
+        [HttpPost]
+        public async Task<IActionResult> CreateAuthor([FromBody] CreateAuthorDto dto, [FromQuery] int userId)
         {
             try
             {
-                var author = await _service.CreateAuthorAsync(dto);
+                if (dto == null) return BadRequest("Author data is required.");
+
+                var author = await _service.CreateAuthorAsync(dto, userId);
                 return CreatedAtAction(nameof(GetAuthorById), new { id = author.Id }, author);
             }
-            catch (Exception ex) 
-            { 
-                return BadRequest(ex.Message); 
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 
+
         [HttpPut]
-        public async Task<IActionResult> EditAuthor(int id, UpdateAuthorDto dto)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> EditAuthor(int id, [FromBody] UpdateAuthorDto dto, [FromQuery] int userId)
         {
             try
             {
                 if (id != dto.Id) return BadRequest("ID mismatch.");
 
-                var success = await _service.EditAuthorAsync(dto);
+                var success = await _service.EditAuthorAsync(dto, userId);
                 if (!success) return NotFound();
 
                 return NoContent();
@@ -80,6 +89,7 @@ namespace LibraryManagementSystemAPIs.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
 
         [HttpPut("archive {id}")]
         public async Task<IActionResult> ArchiveAuthor(int id, [FromQuery] int userId)

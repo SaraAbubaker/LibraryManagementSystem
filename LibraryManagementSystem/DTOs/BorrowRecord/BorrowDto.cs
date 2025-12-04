@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace LibraryManagementSystem.DTOs.BorrowRecord
@@ -13,7 +14,6 @@ namespace LibraryManagementSystem.DTOs.BorrowRecord
         public DateOnly? ReturnDate { get; set; }
         public bool IsOverdue { get; set; }
         public int OverdueDays { get; set; }
-
 
         public int InventoryRecordId { get; set; }
         public string? CopyCode { get; set; }

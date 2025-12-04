@@ -10,7 +10,8 @@ namespace LibraryManagementSystem.DTOs.BorrowRecord
         [Required]
         public int InventoryRecordId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "User ID is required.")]
+        [Range(1, int.MaxValue, ErrorMessage = "User ID must be greater than zero.")]
         public int UserId { get; set; }
 
         //User picks 
