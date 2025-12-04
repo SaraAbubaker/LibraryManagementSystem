@@ -25,7 +25,7 @@ namespace LibraryManagementSystem.Services
         public async Task<UserTypeDto> CreateUserTypeAsync(CreateUserTypeDto dto, int createdByUserId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Role, "User type role");
+            Validate.NotEmpty(dto.Role, nameof(dto.Role));
             Validate.Positive(createdByUserId, nameof(createdByUserId));
 
             var userType = dto.Adapt<UserType>();
@@ -49,7 +49,7 @@ namespace LibraryManagementSystem.Services
 
         public async Task<UserTypeDto> GetUserTypeByIdAsync(int id)
         {
-            Validate.Positive(id, "Id");
+            Validate.Positive(id, nameof(id));
 
             var userType = await _userTypeRepo.GetByIdAsync(id);
 
@@ -59,8 +59,8 @@ namespace LibraryManagementSystem.Services
         public async Task<UserTypeDto> UpdateUserTypeAsync(UpdateUserTypeDto dto, int userId, int userTypeId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Role, "User type role");
-            Validate.Positive(userTypeId, "User type id");
+            Validate.NotEmpty(dto.Role, nameof(dto.Role));
+            Validate.Positive(userTypeId, nameof(userTypeId));
             Validate.Positive(userId, nameof(userId));
 
             var userType = await _userTypeRepo.GetByIdAsync(userTypeId);
@@ -76,7 +76,7 @@ namespace LibraryManagementSystem.Services
 
         public async Task<bool> ArchiveUserTypeAsync(int id, int archivedByUserId)
         {
-            Validate.Positive(id, "Id");
+            Validate.Positive(id, nameof(id));
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
             var userType = await _userTypeRepo.GetByIdAsync(id);

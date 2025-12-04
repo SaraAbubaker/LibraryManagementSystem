@@ -73,5 +73,28 @@ namespace LibraryManagementSystem.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Archive(int id, [FromQuery] int performedByUserId)
+        {
+            try
+            {
+                var result = await Service.ArchiveUserAsync(id, performedByUserId);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("User not found.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                //already archived or has active borrowed books
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

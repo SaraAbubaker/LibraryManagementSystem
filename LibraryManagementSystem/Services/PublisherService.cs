@@ -27,13 +27,16 @@ namespace LibraryManagementSystem.Services
         public async Task<PublisherDto> CreatePublisherAsync(CreatePublisherDto dto, int createdByUserId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, "Publisher name");
+            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.Positive(createdByUserId, nameof(createdByUserId));
 
             var publisher = new Publisher
             {
                 Name = dto.Name,
                 CreatedByUserId = createdByUserId,
                 CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                LastModifiedByUserId = createdByUserId,
+                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now),
                 IsArchived = false
             };
 
@@ -64,7 +67,7 @@ namespace LibraryManagementSystem.Services
 
         public async Task<PublisherDto> GetPublisherByIdAsync(int id)
         {
-            Validate.Positive(id, "Id");
+            Validate.Positive(id, nameof(id));
 
             var publisher = await _publisherRepo.GetByIdAsync(id);
 
@@ -73,12 +76,12 @@ namespace LibraryManagementSystem.Services
 
             return dto;
         }
-
+        
         public async Task<PublisherDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, "Publisher name");
-            Validate.Positive(publisherId, "Publisher id");
+            Validate.NotNull(dto, nameof(dto)); 
+            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.Positive(publisherId, nameof(publisherId));
             Validate.Positive(userId, nameof(userId));
 
             var publisher = await _publisherRepo.GetByIdAsync(publisherId);
@@ -97,7 +100,7 @@ namespace LibraryManagementSystem.Services
 
         public async Task<bool> ArchivePublisherAsync(int id, int archivedByUserId)
         {
-            Validate.Positive(id, "Id");
+            Validate.Positive(id, nameof(id));
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
             var publisher = await _publisherRepo.GetByIdAsync(id);
@@ -108,6 +111,8 @@ namespace LibraryManagementSystem.Services
             publisher.IsArchived = true;
             publisher.ArchivedByUserId = archivedByUserId;
             publisher.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
+            publisher.LastModifiedByUserId = archivedByUserId;
+            publisher.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _publisherRepo.UpdateAsync(publisher);
 

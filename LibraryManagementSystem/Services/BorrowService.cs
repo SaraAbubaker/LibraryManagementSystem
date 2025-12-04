@@ -82,7 +82,12 @@ namespace LibraryManagementSystem.Services
                 UserId = userId,
                 BorrowDate = DateOnly.FromDateTime(DateTime.Now),
                 DueDate = dto.DueDate ?? DateOnly.FromDateTime(DateTime.Now.AddDays(14)),
-                ReturnDate = null
+                ReturnDate = null,
+
+                CreatedByUserId = userId,
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                LastModifiedByUserId = userId,
+                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now)
             };
 
             await _borrowRepo.AddAsync(borrow);

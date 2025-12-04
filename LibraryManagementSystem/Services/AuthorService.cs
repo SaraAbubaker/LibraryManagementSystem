@@ -6,6 +6,7 @@ using LibraryManagementSystem.Models;
 using LibraryManagementSystem.Repositories;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,15 +26,28 @@ namespace LibraryManagementSystem.Services
         }
 
         //CRUD
-        public async Task<AuthorListDto> CreateAuthorAsync(CreateAuthorDto dto)
+        public async Task<AuthorListDto> CreateAuthorAsync(CreateAuthorDto dto, int userId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, "Author name");
+            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.Positive(userId, nameof(userId));
+
+            var name = dto.Name.Trim();
+            var email = dto.Email?.Trim();
+
+            var existingAuthors = (await _authorRepo.GetAllAsync()).ToList();
+            if (existingAuthors.Any(a => string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException($"An author with the name '{name}' already exists.");
 
             var author = new Author
             {
                 Name = dto.Name,
-                Email = dto.Email
+                Email = dto.Email,
+                IsArchived = false,
+                CreatedByUserId = userId,
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                LastModifiedByUserId = userId,
+                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now),
             };
 
             await _authorRepo.AddAsync(author);
@@ -70,7 +84,7 @@ namespace LibraryManagementSystem.Services
 
         public async Task<AuthorListDto?> GetAuthorByIdAsync(int id)
         {
-            Validate.Positive(id, "Id");
+            Validate.Positive(id, nameof(id));
 
             var author = await _authorRepo.GetByIdAsync(id);
             if (author == null || author.IsArchived) return null;
@@ -82,17 +96,31 @@ namespace LibraryManagementSystem.Services
             return dto;
         }
 
-        public async Task<bool> EditAuthorAsync(UpdateAuthorDto dto)
+        public async Task<bool> EditAuthorAsync(UpdateAuthorDto dto, int userId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.Positive(dto.Id, "Id");
-            Validate.NotEmpty(dto.Name, "Author name");
+            Validate.Positive(dto.Id, nameof(dto.Id));
+            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.Positive(userId, nameof(userId));
 
             var author = await _authorRepo.GetByIdAsync(dto.Id);
             if (author.IsArchived) throw new ConflictException($"Author with id {dto.Id} is archived.");
 
+            var name = dto.Name.Trim();
+            var email = dto.Email?.Trim();
+
+            var authors = await _authorRepo.GetAllAsync();
+            if (authors.Any(a =>
+                a.Id != dto.Id &&
+                string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException($"Another author with the name '{name}' already exists.");
+            }
+
             author.Name = dto.Name;
             author.Email = dto.Email;
+            author.LastModifiedByUserId = userId;
+            author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _authorRepo.UpdateAsync(author);
 
@@ -101,8 +129,8 @@ namespace LibraryManagementSystem.Services
 
         public async Task<bool> ArchiveAuthorAsync(int id, int performedByUserId)
         {
-            Validate.Positive(id, "Id");
-            Validate.Positive(performedByUserId, "performedByUserId");
+            Validate.Positive(id, nameof(id));
+            Validate.Positive(performedByUserId, nameof(performedByUserId));
 
             var author = await _authorRepo.GetByIdAsync(id);
             if (author == null) throw new NotFoundException($"Author with id {id} not found.");
@@ -120,6 +148,8 @@ namespace LibraryManagementSystem.Services
             author.IsArchived = true;
             author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             author.ArchivedByUserId = performedByUserId;
+            author.LastModifiedByUserId = performedByUserId;
+            author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _authorRepo.UpdateAsync(author);
             return true;
