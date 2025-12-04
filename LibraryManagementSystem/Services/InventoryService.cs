@@ -30,8 +30,8 @@ namespace LibraryManagementSystem.Services
         //Available = true + audit fields set
         public async Task<bool> ReturnCopyAsync(int inventoryRecordId, int currentUserId)
         {
-            Validate.Positive(inventoryRecordId, "inventoryRecordId");
-            Validate.Positive(currentUserId, "currentUserId");
+            Validate.Positive(inventoryRecordId, nameof(inventoryRecordId));
+            Validate.Positive(currentUserId, nameof(currentUserId));
 
             var copy = await _inventoryRepo.GetByIdAsync(inventoryRecordId);
 
@@ -47,17 +47,20 @@ namespace LibraryManagementSystem.Services
         //Create, Remove, Read
         public async Task<InventoryRecord> CreateCopyAsync(int bookId, string copyCode, int createdByUserId)
         {
-            Validate.Positive(bookId, "bookId");
-            Validate.NotEmpty(copyCode, "copyCode");
-            Validate.Positive(createdByUserId, "createdByUserId");
+            Validate.Positive(bookId, nameof(bookId));
+            Validate.NotEmpty(copyCode, nameof(copyCode));
+            Validate.Positive(createdByUserId, nameof(createdByUserId));
             
             var record = new InventoryRecord
             {
                 BookId = bookId,
                 CopyCode = copyCode,
                 IsAvailable = true,
+                IsArchived = false,
                 CreatedByUserId = createdByUserId,
-                CreatedDate = DateOnly.FromDateTime(DateTime.Now)
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                LastModifiedByUserId = createdByUserId,
+                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now)
             };
 
             await _inventoryRepo.AddAsync(record);
@@ -67,14 +70,16 @@ namespace LibraryManagementSystem.Services
 
         public async Task<bool> RemoveCopyAsync(int inventoryRecordId, int performedByUserId)
         {
-            Validate.Positive(inventoryRecordId, "inventoryRecordId");
-            Validate.Positive(performedByUserId, "performedByUserId");
+            Validate.Positive(inventoryRecordId, nameof(inventoryRecordId));
+            Validate.Positive(performedByUserId, nameof(performedByUserId));
 
             var copy = await _inventoryRepo.GetByIdAsync(inventoryRecordId);
 
             copy.IsArchived = true;
             copy.ArchivedByUserId = performedByUserId;
             copy.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
+            copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
+            copy.LastModifiedByUserId = performedByUserId;
 
             await _inventoryRepo.UpdateAsync(copy);
 

@@ -27,12 +27,19 @@ namespace LibraryManagementSystem.Services
 
 
         //CRUD
-        public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto)
+        public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto, int userId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, "Category name");
+            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.Positive(userId, nameof(userId));
 
             var category = dto.Adapt<Category>();
+
+            category.CreatedByUserId = userId;
+            category.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
+            category.LastModifiedByUserId = userId;
+            category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
+            category.IsArchived = false;
 
             await _categoryRepo.AddAsync(category);
 
@@ -52,8 +59,8 @@ namespace LibraryManagementSystem.Services
         public async Task<CategoryDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, "Category name");
-            Validate.Positive(dto.Id, "Id");
+            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.Positive(dto.Id, nameof(dto.Id));
             Validate.Positive(userId, nameof(userId));
 
             var category = await _categoryRepo.GetByIdAsync(dto.Id);
@@ -68,9 +75,9 @@ namespace LibraryManagementSystem.Services
         }
 
         //Archives category & Moves books out of it
-        public async Task<bool> ArchiveCategoryAsync(int id, int? archivedByUserId = null)
+        public async Task<bool> ArchiveCategoryAsync(int id, int? performedByUserId = null)
         {
-            Validate.Positive(id, "id");
+            Validate.Positive(id, nameof(id));
 
             var category = await _categoryRepo.GetByIdAsync(id);
 
@@ -91,8 +98,10 @@ namespace LibraryManagementSystem.Services
             }
 
             category.IsArchived = true;
-            category.ArchivedByUserId = archivedByUserId;
+            category.ArchivedByUserId = performedByUserId;
             category.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
+            category.LastModifiedByUserId = performedByUserId;
+            category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _categoryRepo.UpdateAsync(category);
 

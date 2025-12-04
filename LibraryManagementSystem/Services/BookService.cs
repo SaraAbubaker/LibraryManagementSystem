@@ -28,12 +28,15 @@ namespace LibraryManagementSystem.Services
         public async Task<Book> CreateBookAsync(CreateBookDto dto, int currentUserId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.Positive(currentUserId, "currentUserId");
+            Validate.Positive(currentUserId, nameof(currentUserId));
 
             var book = dto.Adapt<Book>();  //Mapping using Mapster
 
             book.CreatedByUserId = currentUserId;
             book.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
+            book.LastModifiedByUserId = currentUserId;
+            book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
+            book.IsArchived = false;
 
             await _bookRepo.AddAsync(book);
 
@@ -103,8 +106,8 @@ namespace LibraryManagementSystem.Services
         public async Task<bool> UpdateBookAsync(UpdateBookDto dto, int currentUserId)
         {
             Validate.NotNull(dto, nameof(dto));
-            Validate.Positive(dto.Id, "Id");
-            Validate.Positive(currentUserId, "currentUserId");
+            Validate.Positive(dto.Id, nameof(dto.Id));
+            Validate.Positive(currentUserId, nameof(currentUserId));
 
             var book = await _bookRepo.GetByIdAsync(dto.Id);
             if (book == null)
@@ -132,8 +135,8 @@ namespace LibraryManagementSystem.Services
 
         public async Task<bool> ArchiveBookAsync(int bookId, int performedByUserId)
         {
-            Validate.Positive(bookId, "bookId");
-            Validate.Positive(performedByUserId, "performedByUserId");
+            Validate.Positive(bookId, nameof(bookId));
+            Validate.Positive(performedByUserId, nameof(performedByUserId));
 
             var book = await _bookRepo.GetByIdAsync(bookId);
             if (book == null)
@@ -142,6 +145,8 @@ namespace LibraryManagementSystem.Services
             book.IsArchived = true;
             book.ArchivedByUserId = performedByUserId;
             book.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
+            book.LastModifiedByUserId = performedByUserId;
+            book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _bookRepo.UpdateAsync(book);
             return true;
