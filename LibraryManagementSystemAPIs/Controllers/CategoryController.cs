@@ -32,11 +32,11 @@ namespace LibraryManagementSystem.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(CreateCategoryDto dto)
+        public async Task<IActionResult> Create( CreateCategoryDto dto, [FromQuery] int userId)
         {
             try
             {
-                var created = await _service.CreateCategoryAsync(dto);
+                var created = await _service.CreateCategoryAsync(dto, userId);
                 return Ok(created);
             }
             catch (Exception ex)

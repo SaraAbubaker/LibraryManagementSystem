@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace LibraryManagementSystem.DTOs.UserType
@@ -8,5 +9,6 @@ namespace LibraryManagementSystem.DTOs.UserType
     {
         public int Id { get; set; }
         public string Role { get; set; } = null!;
+        public int UserId { get; set; }
     }
 }
