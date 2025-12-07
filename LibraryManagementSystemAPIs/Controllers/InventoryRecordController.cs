@@ -1,18 +1,15 @@
-﻿using LibraryManagementSystem.Models;
-using LibraryManagementSystem.Services;
+﻿using Library.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
-namespace LibraryManagementSystem.Controllers
+namespace Library.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class InventoryController : ControllerBase
     {
-        private readonly InventoryService _service;
+        private readonly IInventoryService _service;
 
-        public InventoryController(InventoryService service)
+        public InventoryController(IInventoryService service)
         {
             _service = service;
         }

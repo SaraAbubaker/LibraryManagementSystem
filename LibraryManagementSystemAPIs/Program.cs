@@ -1,8 +1,7 @@
-
-using LibraryManagementSystem.Data;
-using LibraryManagementSystem.Models;
-using LibraryManagementSystem.Repositories;
-using LibraryManagementSystem.Services;
+using Library.Domain.Data;
+using Library.Domain.Repositories;
+using Library.Services.Services;
+using Library.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,14 +18,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddScoped<AuthorService>();
-builder.Services.AddScoped<BookService>();
-builder.Services.AddScoped<BorrowService>();
-builder.Services.AddScoped<CategoryService>();
-builder.Services.AddScoped<InventoryService>();
-builder.Services.AddScoped<PublisherService>();
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<UserTypeService>();
+builder.Services.AddScoped<IAuthorService, AuthorService>();
+builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IBorrowService, BorrowService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IPublisherService, PublisherService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserTypeService, UserTypeService>();
 
 
 var app = builder.Build();

@@ -1,4 +1,7 @@
 <Solution>
-  <Project Path="LibraryManagementSystem/LibraryManagementSystem.csproj" />
-  <Project Path="LibraryManagementSystemAPIs/LibraryManagementSystemAPIs.csproj" Id="e29fc9a2-d6d5-4a42-8384-9173ccc53d01" />
+  <Project Path="Library.Domain/Library.Domain.csproj" Id="744a9587-ec2a-4147-8fd8-38073876ac5c" />
+  <Project Path="Library.Entities/Library.Entities.csproj" Id="42db3de9-ab02-4bea-86c8-261188bf025f" />
+  <Project Path="Library.Services/Library.Services.csproj" Id="783d0549-50eb-46a4-8cad-553e0a88d399" />
+  <Project Path="Library.Shared/Library.Shared.csproj" Id="73aa5cc1-34a7-46a5-abcb-3fed8458295d" />
+  <Project Path="LibraryManagementSystemAPIs/Library.API.csproj" Id="e29fc9a2-d6d5-4a42-8384-9173ccc53d01" />
 </Solution>

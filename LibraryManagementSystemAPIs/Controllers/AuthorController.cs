@@ -1,17 +1,17 @@
-﻿using LibraryManagementSystem.DTOs.Author;
-using LibraryManagementSystem.Services;
+﻿using Library.Shared.DTOs.Author;
+using Library.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Mapster;
 
-namespace LibraryManagementSystemAPIs.Controllers
+namespace Library.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class AuthorsController : ControllerBase
     {
-        private readonly AuthorService _service;
+        private readonly IAuthorService _service;
 
-        public AuthorsController(AuthorService service)
+        public AuthorsController(IAuthorService service)
         {
             _service = service;
         }

@@ -1,18 +1,16 @@
-﻿using LibraryManagementSystem.DTOs.Category;
-using LibraryManagementSystem.Services;
+﻿using Library.Shared.DTOs.Category;
+using Library.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
-namespace LibraryManagementSystem.Controllers
+namespace Library.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class CategoryController : ControllerBase
     {
-        private readonly CategoryService _service;
+        private readonly ICategoryService _service;
 
-        public CategoryController(CategoryService service)
+        public CategoryController(ICategoryService service)
         {
             _service = service;
         }

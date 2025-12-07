@@ -1,18 +1,16 @@
-﻿using LibraryManagementSystem.DTOs.Publisher;
-using LibraryManagementSystem.Services;
+﻿using Library.Shared.DTOs.Publisher;
+using Library.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
-namespace LibraryManagementSystem.Controllers
+namespace Library.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class PublisherController : ControllerBase
     {
-        private readonly PublisherService _service;
+        private readonly IPublisherService _service;
 
-        public PublisherController(PublisherService service)
+        public PublisherController(IPublisherService service)
         {
             _service = service;
         }
