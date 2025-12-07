@@ -1,18 +1,16 @@
-﻿using LibraryManagementSystem.DTOs.UserType;
-using LibraryManagementSystem.Services;
+﻿using Library.Shared.DTOs.UserType;
+using Library.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
-namespace LibraryManagementSystem.Controllers
+namespace Library.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class UserTypeController : ControllerBase
     {
-        private readonly UserTypeService _service;
+        private readonly IUserTypeService _service;
 
-        public UserTypeController(UserTypeService service)
+        public UserTypeController(IUserTypeService service)
         {
             _service = service;
         }

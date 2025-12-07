@@ -9,6 +9,5 @@ namespace LibraryManagementSystem.DTOs.UserType
     {
         public int Id { get; set; }
         public string Role { get; set; } = null!;
-        public int UserId { get; set; }
     }
 }

@@ -1,18 +1,16 @@
-﻿using LibraryManagementSystem.DTOs.Book;
-using LibraryManagementSystem.Services;
+﻿using Library.Shared.DTOs.Book;
+using Library.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
-namespace LibraryManagementSystemAPIs.Controllers
+namespace Library.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class BooksController : ControllerBase
     {
-        private readonly BookService _service;
+        private readonly IBookService _service;
 
-        public BooksController(BookService service)
+        public BooksController(IBookService service)
         {
             _service = service;
         }
@@ -99,6 +97,9 @@ namespace LibraryManagementSystemAPIs.Controllers
                 var success = await _service.ArchiveBookAsync(id, userId);
                 if (!success) return NotFound();
                 return NoContent();
+
+                var archivedBook = await _service.GetBookDetailsAsync(id);
+                return Ok(archivedBook);
             }
             catch (Exception ex)
             {

@@ -16,11 +16,6 @@ namespace LibraryManagementSystem.DTOs.Book
         [StringLength(50)]
         public string? Version { get; set; }
 
-        [Required(ErrorMessage = "User ID is required.")]
-        [Range(1, int.MaxValue, ErrorMessage = "User ID must be greater than zero.")]
-        public int UserId { get; set; }
-
-
         public int? PublisherId { get; set; }
         public int? AuthorId { get; set; }
         public int? CategoryId { get; set; }
