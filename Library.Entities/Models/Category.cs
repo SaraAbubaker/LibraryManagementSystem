@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Library.Entities.Models
 {
-    public class Category : AuditBase
+    public class Category : AuditBase, IArchivable
     {
         [Required]
         [StringLength(100, MinimumLength = 1)]

@@ -1,5 +1,6 @@
-﻿using Library.Shared.DTOs.Book;
-using Library.Services.Interfaces;
+﻿using Library.Services.Interfaces;
+using Library.Shared.DTOs.Book;
+using Library.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.API.Controllers
@@ -94,12 +95,12 @@ namespace Library.API.Controllers
         {
             try
             {
-                var success = await _service.ArchiveBookAsync(id, userId);
-                if (!success) return NotFound();
-                return NoContent();
-
-                var archivedBook = await _service.GetBookDetailsAsync(id);
-                return Ok(archivedBook);
+                await _service.ArchiveBookAsync(id, userId);
+                return Ok(await _service.GetBookDetailsAsync(id));
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
             }
             catch (Exception ex)
             {

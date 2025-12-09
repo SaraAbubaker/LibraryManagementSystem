@@ -1,10 +1,12 @@
 ﻿
+using Library.Shared.Helpers;
 using System.ComponentModel.DataAnnotations;
 
 namespace Library.Shared.DTOs.Author
 {
     public class UpdateAuthorDto
     {
+        [Positive]
         [Required(ErrorMessage = "Author ID is required.")]
         public int Id { get; set; }
 

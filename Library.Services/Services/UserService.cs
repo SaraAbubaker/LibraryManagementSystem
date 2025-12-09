@@ -5,6 +5,7 @@ using Library.Shared.Exceptions;
 using Library.Entities.Models;
 using Library.Services.Interfaces;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Services.Services
 {
@@ -32,7 +33,7 @@ namespace Library.Services.Services
             var usernameNormalized = dto.Username.Trim();
             var emailInput = dto.Email.Trim();
 
-            var users = await _userRepo.GetAllAsync();
+            var users = _userRepo.GetAll();
 
             if (users.Any(u => string.Equals(u.Username, usernameNormalized, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Username already taken.");
@@ -41,7 +42,7 @@ namespace Library.Services.Services
                 throw new InvalidOperationException("Email already registered.");
 
             //Normal user
-            var userType = (await _userTypeRepo.GetAllAsync())
+            var userType = _userTypeRepo.GetAll()
                    .FirstOrDefault(ut => ut.Role == "Normal");
 
             if (userType == null)
@@ -84,7 +85,7 @@ namespace Library.Services.Services
             var input = dto.UsernameOrEmail.Trim();
             var password = dto.Password.Trim();
 
-            var users = await _userRepo.GetAllAsync();
+            var users = _userRepo.GetAll();
             var user = users.FirstOrDefault(u =>
                 string.Equals(u.Username, input, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(u.Email, input, StringComparison.OrdinalIgnoreCase)
@@ -99,32 +100,35 @@ namespace Library.Services.Services
             return result;
         }
 
-        public async Task<UserDto> GetUserByIdAsync(int id)
+        public IQueryable<UserDto> GetUserByIdQuery(int id)
         {
             Validate.Positive(id, nameof(id));
 
-            var user = await _userRepo.GetByIdAsync(id);
-
-            var dto = user.Adapt<UserDto>();
-            dto.UserRole = user.UserType?.Role ?? "Unknown";
-            dto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
-
-            return dto;
+            return _userRepo.GetAll()
+                .AsNoTracking()
+                .Where(u => u.Id == id)
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    UserRole = u.UserType != null ? u.UserType.Role : "Unknown",
+                    BorrowedBooksCount = u.BorrowRecords.Count()
+                });
         }
 
-        public async Task<List<UserDto>> GetAllUsersAsync()
+        public IQueryable<UserDto> GetAllUsersQuery()
         {
-            var users = (await _userRepo.GetAllAsync()).ToList();
-
-            var dtos = users.Adapt<List<UserDto>>();
-
-            for (int i = 0; i < dtos.Count; i++)
-            {
-                dtos[i].BorrowedBooksCount = users[i].BorrowRecords.Count;
-                dtos[i].UserRole = users[i].UserType?.Role ?? "Unknown";
-            }
-
-            return dtos;
+            return _userRepo.GetAll()
+                .AsNoTracking()
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Username = u.Username,
+                    Email = u.Email,
+                    UserRole = u.UserType != null ? u.UserType.Role : "Unknown",
+                    BorrowedBooksCount = u.BorrowRecords.Count()
+                });
         }
 
         public async Task<UserDto> ArchiveUserAsync(int id, int performedByUserId)
@@ -132,12 +136,9 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(performedByUserId, nameof(performedByUserId));
 
-             var user = await _userRepo.GetByIdAsync(id);
-            
-            if (user.IsArchived)
-                throw new InvalidOperationException($"User with id {id} is already archived.");
+             var user = await _userRepo.GetById(id).FirstOrDefaultAsync();
 
-            if (user.BorrowRecords != null && user.BorrowRecords.Any(br => br.ReturnDate == null))
+            if (user!.BorrowRecords != null && user.BorrowRecords.Any(br => br.ReturnDate == null))
                 throw new InvalidOperationException("User has active borrowed books. Return them before deleting.");
 
             user.IsArchived = true;

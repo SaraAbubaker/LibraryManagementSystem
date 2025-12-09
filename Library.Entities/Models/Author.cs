@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Library.Entities.Models
 {
-    public class Author : AuditBase
+    public class Author : AuditBase, IArchivable
     {
         [Required]
         [StringLength(100, MinimumLength = 1)]

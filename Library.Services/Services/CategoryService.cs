@@ -5,6 +5,7 @@ using Library.Shared.Exceptions;
 using Library.Entities.Models;
 using Library.Services.Interfaces;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Services.Services
 {
@@ -42,14 +43,12 @@ namespace Library.Services.Services
             return category.Adapt<CategoryDto>();
         }
 
-        public async Task<List<CategoryDto>> GetAllCategoriesAsync()
+        public IQueryable<CategoryDto> GetAllCategoriesQuery()
         {
-            var categories = await _categoryRepo.GetAllAsync();
+            var categories = _categoryRepo.GetAll().AsNoTracking();
 
             return categories
-                .Where(c => !c.IsArchived)
-                .Select(c => c.Adapt<CategoryDto>())
-                .ToList();
+                .Select(c => c.Adapt<CategoryDto>());
         }
 
         public async Task<CategoryDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId)
@@ -59,7 +58,7 @@ namespace Library.Services.Services
             Validate.Positive(dto.Id, nameof(dto.Id));
             Validate.Positive(userId, nameof(userId));
 
-            var category = await _categoryRepo.GetByIdAsync(dto.Id);
+            var category = await _categoryRepo.GetById(dto.Id).FirstOrDefaultAsync();
 
             category!.Name = dto.Name;
             category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
@@ -75,16 +74,15 @@ namespace Library.Services.Services
         {
             Validate.Positive(id, nameof(id));
 
-            var category = await _categoryRepo.GetByIdAsync(id);
+            var category = await _categoryRepo.GetById(id).FirstOrDefaultAsync();
 
             if (category!.IsArchived)
                 throw new ConflictException($"Category with id {id} is already archived.");
 
-            var books = (await _bookRepo.GetAllAsync())
-                .Where(b => b.CategoryId == id)
-                .ToList();
+            var books =  _bookRepo.GetAll()
+                .Where(b => b.CategoryId == id);
 
-            var unknownCategory = await _categoryRepo.GetByIdAsync(-1);
+            var unknownCategory = await _categoryRepo.GetById(-1).FirstOrDefaultAsync();
 
             foreach (var book in books)
             {

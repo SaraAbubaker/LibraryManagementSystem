@@ -1,10 +1,11 @@
 ﻿using Library.Domain.Repositories;
-using Library.Shared.Helpers;
-using Library.Shared.DTOs.UserType;
-using Library.Shared.Exceptions;
 using Library.Entities.Models;
 using Library.Services.Interfaces;
+using Library.Shared.DTOs.UserType;
+using Library.Shared.Exceptions;
+using Library.Shared.Helpers;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Services.Services
 {
@@ -34,22 +35,29 @@ namespace Library.Services.Services
             return userType.Adapt<UserTypeDto>();
         }
 
-        public async Task<List<UserTypeDto>> GetAllUserTypesAsync()
+        public IQueryable<UserTypeDto> GetAllUserTypesQuery()
         {
-            var userTypes = (await _userTypeRepo.GetAllAsync())
-                .Where(u => !u.IsArchived)
-                .ToList();
-
-            return userTypes.Adapt<List<UserTypeDto>>();
+            return _userTypeRepo.GetAll()
+                .AsNoTracking()
+                .Select(ut => new UserTypeDto
+                {
+                    Id = ut.Id,
+                    Role = ut.Role
+                });
         }
 
-        public async Task<UserTypeDto> GetUserTypeByIdAsync(int id)
+        public IQueryable<UserTypeDto> GetUserTypeByIdQuery(int id)
         {
             Validate.Positive(id, nameof(id));
 
-            var userType = await _userTypeRepo.GetByIdAsync(id);
-
-            return userType!.Adapt<UserTypeDto>();
+            return _userTypeRepo.GetAll()
+                .AsNoTracking()
+                .Where(ut => ut.Id == id)
+                .Select(ut => new UserTypeDto
+                {
+                    Id = ut.Id,
+                    Role = ut.Role
+                });
         }
 
         public async Task<UserTypeDto> UpdateUserTypeAsync(UpdateUserTypeDto dto, int userId, int userTypeId)
@@ -59,7 +67,10 @@ namespace Library.Services.Services
             Validate.Positive(userTypeId, nameof(userTypeId));
             Validate.Positive(userId, nameof(userId));
 
-            var userType = await _userTypeRepo.GetByIdAsync(userTypeId);
+            var userType = await _userTypeRepo.GetById(userTypeId).FirstOrDefaultAsync();
+
+            if (userType == null)
+                throw new Exception($"UserType {userTypeId} not found.");
 
             userType.Role = dto.Role;
             userType.LastModifiedByUserId = userId;
@@ -75,12 +86,11 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
-            var userType = await _userTypeRepo.GetByIdAsync(id);
+            var userType = await _userTypeRepo.GetById(id).FirstOrDefaultAsync();
 
-            if (userType.IsArchived)
-                throw new ConflictException($"UserType with id {id} is already archived.");
+            Validate.NotNull(userType, nameof(userType));
 
-            userType.IsArchived = true;
+            userType!.IsArchived = true;
             userType.ArchivedByUserId = archivedByUserId;
             userType.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 

@@ -1,4 +1,5 @@
 ﻿
+using Library.Shared.Helpers;
 using System.ComponentModel.DataAnnotations;
 
 namespace Library.Shared.DTOs.Category
@@ -6,6 +7,7 @@ namespace Library.Shared.DTOs.Category
     public class UpdateCategoryDto
     {
         [Required]
+        [Positive]
         public int Id { get; set; }
 
         [Required]

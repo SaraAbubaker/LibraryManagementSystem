@@ -3,7 +3,7 @@ using Library.Entities.Base;
 
 namespace Library.Entities.Models
 {
-    public class Book : AuditBase
+    public class Book : AuditBase, IArchivable
     {
         [Required]
         [StringLength(200, MinimumLength = 1)]

@@ -4,7 +4,7 @@ using Library.Entities.Base;
 
 namespace Library.Entities.Models
 {
-    public class User : AuditBase
+    public class User : AuditBase, IArchivable
     {
         [Required]
         [StringLength(30, MinimumLength = 3)]

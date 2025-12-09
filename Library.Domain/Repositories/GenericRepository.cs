@@ -1,9 +1,11 @@
 ﻿using Library.Domain.Data;
+using Library.Entities.Base;
+using Library.Entities.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Library.Domain.Repositories
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    public class GenericRepository<T> : IGenericRepository<T> where T : AuditBase
     {
         private readonly LibraryContext _context;
         private readonly DbSet<T> _dbSet;
@@ -15,17 +17,22 @@ namespace Library.Domain.Repositories
         }
 
         //Methods from IGenericRepository<T>
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public IQueryable<T> GetAll()
         {
-            return await _dbSet.ToListAsync();
+            IQueryable<T> query = _dbSet.AsQueryable();
+
+            if (typeof(IArchivable).IsAssignableFrom(typeof(T)))
+            {
+                query = query.Where(e => !e.IsArchived);
+            }
+
+            return query;
         }
 
-        public async Task<T> GetByIdAsync(int id)
+
+        public IQueryable<T> GetById(int id)
         {
-            var entity = await _dbSet.FindAsync(id);
-            if (entity == null)
-                throw new Exception($"Entity of type {typeof(T).Name} with id {id} not found.");
-            return entity;
+            return _dbSet.Where(e => EF.Property<int>(e, "Id") == id);
         }
 
         public async Task AddAsync(T entity)

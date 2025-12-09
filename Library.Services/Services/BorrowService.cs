@@ -4,6 +4,7 @@ using Library.Shared.DTOs.BorrowRecord;
 using Library.Shared.Exceptions;
 using Library.Entities.Models;
 using Library.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Services.Services
 {
@@ -25,9 +26,9 @@ namespace Library.Services.Services
 
 
         //ListAll
-        public async Task<List<BorrowDto>> GetBorrowDetailsAsync()
+        public IQueryable<BorrowDto> GetBorrowDetailsQuery()
         {
-            var allRecords = await _borrowRepo.GetAllAsync();
+            var allRecords = _borrowRepo.GetAll().AsNoTracking();
 
             return allRecords.Select(b => new BorrowDto
             {
@@ -35,26 +36,28 @@ namespace Library.Services.Services
                 BorrowDate = b.BorrowDate,
                 DueDate = b.DueDate,
                 ReturnDate = b.ReturnDate,
-                CopyCode = b.InventoryRecord?.CopyCode,
-                Username = b.User?.Username,
+                CopyCode = b.InventoryRecord != null ? b.InventoryRecord.CopyCode : null,
+                Username = b.User != null ? b.User.Username : null,
                 IsOverdue = IsBorrowOverdue(b),
                 OverdueDays = CalculateOverdueDays(b)
-            }).ToList();
+            });
         }
 
         //Availability
         public async Task<bool> HasAvailableCopyAsync(int bookId)
         {
             Validate.Positive(bookId, nameof(bookId));
-            var copies = await _inventoryService.GetAvailableCopiesAsync(bookId);
+            var copies = _inventoryService.GetAvailableCopiesQuery(bookId);
             return copies.Any();
         }
 
-        public async Task<InventoryRecord?> GetAvailableCopyAsync(int bookId)
+        public IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId)
         {
             Validate.Positive(bookId, nameof(bookId));
-            var copies = await _inventoryService.GetAvailableCopiesAsync(bookId);
-            return copies.FirstOrDefault();
+
+            return _inventoryRepo.GetAll()
+                .AsNoTracking()
+                .Where(ir => ir.BookId == bookId && ir.IsAvailable);
         }
 
         //Borrow & Return
@@ -64,7 +67,7 @@ namespace Library.Services.Services
             Validate.Positive(dto.InventoryRecordId, nameof(dto.InventoryRecordId));
             Validate.Positive(userId, nameof(userId));
 
-            var copy = await _inventoryRepo.GetByIdAsync(dto.InventoryRecordId);
+            var copy = await _inventoryRepo.GetById(dto.InventoryRecordId).FirstOrDefaultAsync();
             if (copy == null || !copy.IsAvailable)
                 throw new ConflictException("Inventory copy is not available.");
 
@@ -95,7 +98,7 @@ namespace Library.Services.Services
             Validate.Positive(borrowRecordId, nameof(borrowRecordId));
             Validate.Positive(currentUserId, nameof(currentUserId));
 
-            var record = await _borrowRepo.GetByIdAsync(borrowRecordId);
+            var record = await _borrowRepo.GetById(borrowRecordId).FirstOrDefaultAsync();
             
             if (record!.ReturnDate != null)
                 throw new ConflictException($"Borrow record with id {borrowRecordId} has already been returned.");
@@ -111,15 +114,14 @@ namespace Library.Services.Services
 
 
         //Overdue Logic
-        public async Task<List<BorrowRecord>> GetOverdueRecordsAsync()
+        public IQueryable<BorrowRecord> GetOverdueRecordsQuery()
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            var allRecords = await _borrowRepo.GetAllAsync();
+            var allRecords = _borrowRepo.GetAll().AsNoTracking();
 
             return allRecords
-                .Where(r => r.ReturnDate == null && r.DueDate < today)
-                .ToList();
+                .Where(r => r.ReturnDate == null && r.DueDate < today);
         }
 
         public bool IsBorrowOverdue(BorrowRecord record)

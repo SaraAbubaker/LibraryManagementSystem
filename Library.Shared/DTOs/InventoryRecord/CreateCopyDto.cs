@@ -1,4 +1,5 @@
 ﻿
+using Library.Shared.Helpers;
 using System.ComponentModel.DataAnnotations;
 
 namespace Library.Shared.DTOs.InventoryRecord
@@ -11,6 +12,7 @@ namespace Library.Shared.DTOs.InventoryRecord
         public string CopyCode { get; set; } = null!;
 
         [Required]
+        [Positive]
         public int BookId { get; set; }
 
     }

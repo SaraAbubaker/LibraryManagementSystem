@@ -7,8 +7,8 @@ namespace Library.Services.Interfaces
     {
         Task<UserDto> RegisterUserAsync(RegisterUserDto dto);
         Task<UserDto> LoginUserAsync(LoginDto dto);
-        Task<UserDto> GetUserByIdAsync(int id);
-        Task<List<UserDto>> GetAllUsersAsync();
+        IQueryable<UserDto> GetUserByIdQuery(int id);
+        IQueryable<UserDto> GetAllUsersQuery();
         Task<UserDto> ArchiveUserAsync(int id, int performedByUserId);
     }
 }

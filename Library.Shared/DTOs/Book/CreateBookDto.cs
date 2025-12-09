@@ -1,4 +1,5 @@
 ﻿
+using Library.Shared.Helpers;
 using System.ComponentModel.DataAnnotations;
 
 namespace Library.Shared.DTOs.Book
@@ -14,10 +15,13 @@ namespace Library.Shared.DTOs.Book
         public string? Version { get; set; }
 
 
-        public int? PublisherId { get; set; } 
-        
+        [Positive]
+        public int? PublisherId { get; set; }
+
+        [Positive]
         public int? AuthorId { get; set; }
-        
+
+        [Positive]
         public int? CategoryId { get; set; }
     }
 }

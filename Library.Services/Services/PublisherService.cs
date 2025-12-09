@@ -5,6 +5,7 @@ using Library.Shared.Exceptions;
 using Library.Entities.Models;
 using Library.Services.Interfaces;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.Services.Services
 {
@@ -44,32 +45,31 @@ namespace Library.Services.Services
             return publisherDto;
         }
 
-        public async Task<List<PublisherDto>> GetAllPublishersAsync()
+        public IQueryable<PublisherDto> GetAllPublishersQuery()
         {
-            var publishers = (await _publisherRepo.GetAllAsync())
-                .Where(p => !p.IsArchived)
-                .ToList();
-
-            var dtos = publishers.Adapt<List<PublisherDto>>();
-
-            for (int i = 0; i < dtos.Count; i++)
-            {
-                dtos[i].InventoryCount = publishers[i].InventoryRecords.Count;
-            }
-
-            return dtos;
+            return _publisherRepo.GetAll()
+                .AsNoTracking()
+                .Select(p => new PublisherDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    InventoryCount = p.InventoryRecords.Count()
+                });
         }
 
-        public async Task<PublisherDto> GetPublisherByIdAsync(int id)
+        public IQueryable<PublisherDto> GetPublisherByIdQuery(int id)
         {
             Validate.Positive(id, nameof(id));
 
-            var publisher = await _publisherRepo.GetByIdAsync(id);
-
-            var dto = publisher.Adapt<PublisherDto>();
-            dto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
-
-            return dto;
+            return _publisherRepo.GetAll()
+                .AsNoTracking()
+                .Where(p => p.Id == id)
+                .Select(p => new PublisherDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    InventoryCount = p.InventoryRecords.Count()
+                });
         }
         
         public async Task<PublisherDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId)
@@ -79,9 +79,11 @@ namespace Library.Services.Services
             Validate.Positive(publisherId, nameof(publisherId));
             Validate.Positive(userId, nameof(userId));
 
-            var publisher = await _publisherRepo.GetByIdAsync(publisherId);
+            var publisher = await _publisherRepo.GetById(publisherId).FirstOrDefaultAsync();
 
-            publisher.Name = dto.Name;
+            Validate.NotNull(publisher, nameof(publisher));
+
+            publisher!.Name = dto.Name;
             publisher.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             publisher.LastModifiedByUserId = userId;
 
@@ -98,12 +100,11 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
-            var publisher = await _publisherRepo.GetByIdAsync(id);
+            var publisher = await _publisherRepo.GetById(id).FirstOrDefaultAsync();
 
-            if (publisher.IsArchived)
-                throw new ConflictException($"Publisher with id {id} is already archived.");
+            Validate.NotNull(publisher, nameof(publisher));
 
-            publisher.IsArchived = true;
+            publisher!.IsArchived = true;
             publisher.ArchivedByUserId = archivedByUserId;
             publisher.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             publisher.LastModifiedByUserId = archivedByUserId;

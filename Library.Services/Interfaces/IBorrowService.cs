@@ -5,12 +5,12 @@ namespace Library.Services.Interfaces
 {
     public interface IBorrowService
     {
-        Task<List<BorrowDto>> GetBorrowDetailsAsync();
+        IQueryable<BorrowDto> GetBorrowDetailsQuery();
         Task<bool> HasAvailableCopyAsync(int bookId);
-        Task<InventoryRecord?> GetAvailableCopyAsync(int bookId);
+        IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId);
         Task<BorrowRecord> BorrowBookAsync(RequestBorrowDto dto, int userId);
         Task<bool> ReturnBookAsync(int borrowRecordId, int currentUserId);
-        Task<List<BorrowRecord>> GetOverdueRecordsAsync();
+        IQueryable<BorrowRecord> GetOverdueRecordsQuery();
         bool IsBorrowOverdue(BorrowRecord record);
         int CalculateOverdueDays(BorrowRecord record);
 

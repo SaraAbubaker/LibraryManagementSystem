@@ -3,8 +3,8 @@ namespace Library.Domain.Repositories
 {
     public interface IGenericRepository<T> where T : class
     {
-        Task<IEnumerable<T>> GetAllAsync();
-        Task<T> GetByIdAsync(int id);
+        IQueryable<T> GetAll();
+        IQueryable<T> GetById(int id);
         Task AddAsync(T entity);
         Task UpdateAsync(T entity);
         Task ArchiveAsync(T entity);
