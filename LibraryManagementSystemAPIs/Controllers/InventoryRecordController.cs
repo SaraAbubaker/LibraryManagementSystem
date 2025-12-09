@@ -14,13 +14,13 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet("book/{bookId}")]
-        public async Task<IActionResult> ListCopies(int bookId)
+        [HttpGet("book/{bookId}/query")]
+        public IActionResult ListCopiesQuery(int bookId)
         {
             try
             {
-                var result = await _service.ListCopiesForBookAsync(bookId);
-                return Ok(result);
+                var query = _service.ListCopiesForBookQuery(bookId);
+                return Ok(query);
             }
             catch (Exception ex)
             {
@@ -28,13 +28,13 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("available/{bookId}")]
-        public async Task<IActionResult> ListAvailableCopies(int bookId)
+        [HttpGet("available/{bookId}/query")]
+        public IActionResult ListAvailableCopiesQuery(int bookId)
         {
             try
             {
-                var result = await _service.GetAvailableCopiesAsync(bookId);
-                return Ok(result);
+                var query = _service.GetAvailableCopiesQuery(bookId);
+                return Ok(query);
             }
             catch (Exception ex)
             {

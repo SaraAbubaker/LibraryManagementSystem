@@ -1,7 +1,8 @@
-﻿using Library.Shared.DTOs.Author;
-using Library.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
+﻿using Library.Services.Interfaces;
+using Library.Shared.DTOs.Author;
 using Mapster;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.API.Controllers
 {
@@ -16,12 +17,12 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> ListAuthors()
+        [HttpGet("query")]
+        public IActionResult ListAuthorsQuery()
         {
             try
             {
-                var result = await _service.ListAuthorsAsync();
+                var result = _service.ListAuthorsQuery();
                 return Ok(result);
             } 
             catch (Exception ex) 
@@ -30,16 +31,16 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetAuthorById(int id)
+        [HttpGet("query/{id}")]
+        public async Task<IActionResult> GetAuthorByIdQuery(int id)
         {
             try
             {
-                var author = await _service.GetAuthorByIdAsync(id);
+                var query = _service.GetAuthorByIdQuery(id);
+                var author = await query.FirstOrDefaultAsync();
                 if (author == null) return NotFound();
 
-                var dto = author.Adapt<AuthorListDto>();
-                return Ok(dto);
+                return Ok(author);
             }
             catch (Exception ex)
             {
@@ -58,7 +59,7 @@ namespace Library.API.Controllers
                 if (dto == null) return BadRequest("Author data is required.");
 
                 var author = await _service.CreateAuthorAsync(dto, userId);
-                return CreatedAtAction(nameof(GetAuthorById), new { id = author.Id }, author);
+                return CreatedAtAction(nameof(GetAuthorByIdQuery), new { id = author.Id }, author);
             }
             catch (InvalidOperationException ex)
             {
@@ -71,7 +72,6 @@ namespace Library.API.Controllers
         }
 
 
-        [HttpPut]
         [HttpPut("{id}")]
         public async Task<IActionResult> EditAuthor(int id, [FromBody] UpdateAuthorDto dto, [FromQuery] int userId)
         {
@@ -91,7 +91,7 @@ namespace Library.API.Controllers
         }
 
 
-        [HttpPut("archive {id}")]
+        [HttpPut("archive/{id}")]
         public async Task<IActionResult> ArchiveAuthor(int id, [FromQuery] int userId)
         {
             try

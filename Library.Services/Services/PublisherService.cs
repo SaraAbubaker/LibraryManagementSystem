@@ -22,8 +22,7 @@ namespace Library.Services.Services
         //CRUD
         public async Task<PublisherDto> CreatePublisherAsync(CreatePublisherDto dto, int createdByUserId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.ValidateModel(dto); 
             Validate.Positive(createdByUserId, nameof(createdByUserId));
 
             var publisher = new Publisher
@@ -74,16 +73,16 @@ namespace Library.Services.Services
         
         public async Task<PublisherDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId)
         {
-            Validate.NotNull(dto, nameof(dto)); 
-            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.ValidateModel(dto);
             Validate.Positive(publisherId, nameof(publisherId));
             Validate.Positive(userId, nameof(userId));
 
-            var publisher = await _publisherRepo.GetById(publisherId).FirstOrDefaultAsync();
+            var publisher = Validate.Exists(
+                await _publisherRepo.GetById(publisherId).FirstOrDefaultAsync(),
+                $"Publisher with id {publisherId}"
+            );
 
-            Validate.NotNull(publisher, nameof(publisher));
-
-            publisher!.Name = dto.Name;
+            publisher.Name = dto.Name;
             publisher.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             publisher.LastModifiedByUserId = userId;
 
@@ -100,11 +99,12 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
-            var publisher = await _publisherRepo.GetById(id).FirstOrDefaultAsync();
+            var publisher = Validate.Exists(
+                await _publisherRepo.GetById(id).FirstOrDefaultAsync(),
+                $"Publisher with id {id}"
+            );
 
-            Validate.NotNull(publisher, nameof(publisher));
-
-            publisher!.IsArchived = true;
+            publisher.IsArchived = true;
             publisher.ArchivedByUserId = archivedByUserId;
             publisher.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             publisher.LastModifiedByUserId = archivedByUserId;

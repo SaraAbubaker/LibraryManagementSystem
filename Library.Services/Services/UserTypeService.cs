@@ -21,8 +21,7 @@ namespace Library.Services.Services
         //CRUD
         public async Task<UserTypeDto> CreateUserTypeAsync(CreateUserTypeDto dto, int createdByUserId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Role, nameof(dto.Role));
+            Validate.ValidateModel(dto);
             Validate.Positive(createdByUserId, nameof(createdByUserId));
 
             var userType = dto.Adapt<UserType>();
@@ -62,15 +61,12 @@ namespace Library.Services.Services
 
         public async Task<UserTypeDto> UpdateUserTypeAsync(UpdateUserTypeDto dto, int userId, int userTypeId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Role, nameof(dto.Role));
+            Validate.ValidateModel(dto);
             Validate.Positive(userTypeId, nameof(userTypeId));
             Validate.Positive(userId, nameof(userId));
 
-            var userType = await _userTypeRepo.GetById(userTypeId).FirstOrDefaultAsync();
-
-            if (userType == null)
-                throw new Exception($"UserType {userTypeId} not found.");
+            var userType = Validate.Exists(await _userTypeRepo.GetById(userTypeId).FirstOrDefaultAsync(),
+                $"UserType with id {userTypeId}");
 
             userType.Role = dto.Role;
             userType.LastModifiedByUserId = userId;
@@ -86,11 +82,10 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
-            var userType = await _userTypeRepo.GetById(id).FirstOrDefaultAsync();
+            var userType = Validate.Exists(await _userTypeRepo.GetById(id).FirstOrDefaultAsync(),
+                $"UserType with id {id}");
 
-            Validate.NotNull(userType, nameof(userType));
-
-            userType!.IsArchived = true;
+            userType.IsArchived = true;
             userType.ArchivedByUserId = archivedByUserId;
             userType.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 

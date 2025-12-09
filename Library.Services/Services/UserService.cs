@@ -25,10 +25,7 @@ namespace Library.Services.Services
 
         public async Task<UserDto> RegisterUserAsync(RegisterUserDto dto)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Username, nameof(dto.Username));
-            Validate.NotEmpty(dto.Email, nameof(dto.Email));
-            Validate.NotEmpty(dto.Password, nameof(dto.Password));
+            Validate.ValidateModel(dto);
 
             var usernameNormalized = dto.Username.Trim();
             var emailInput = dto.Email.Trim();
@@ -42,11 +39,10 @@ namespace Library.Services.Services
                 throw new InvalidOperationException("Email already registered.");
 
             //Normal user
-            var userType = _userTypeRepo.GetAll()
-                   .FirstOrDefault(ut => ut.Role == "Normal");
-
-            if (userType == null)
-                throw new InvalidOperationException("Default user type 'Normal' not found in the database.");
+            var userType = Validate.Exists(
+                _userTypeRepo.GetAll().FirstOrDefault(ut => ut.Role == "Normal"),
+                "Default user type 'Normal'"
+            );
 
             var user = dto.Adapt<User>();
             user.Username = usernameNormalized;
@@ -78,9 +74,7 @@ namespace Library.Services.Services
 
         public async Task<UserDto> LoginUserAsync(LoginDto dto)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.UsernameOrEmail, nameof(dto.UsernameOrEmail));
-            Validate.NotEmpty(dto.Password, nameof(dto.Password));
+            Validate.ValidateModel(dto);
 
             var input = dto.UsernameOrEmail.Trim();
             var password = dto.Password.Trim();
@@ -136,7 +130,10 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(performedByUserId, nameof(performedByUserId));
 
-             var user = await _userRepo.GetById(id).FirstOrDefaultAsync();
+            var user = Validate.Exists(
+                await _userRepo.GetById(id).FirstOrDefaultAsync(),
+                $"User with id {id}"
+            );
 
             if (user!.BorrowRecords != null && user.BorrowRecords.Any(br => br.ReturnDate == null))
                 throw new InvalidOperationException("User has active borrowed books. Return them before deleting.");

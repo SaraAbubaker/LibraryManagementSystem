@@ -29,11 +29,12 @@ namespace Library.Services.Services
             Validate.Positive(inventoryRecordId, nameof(inventoryRecordId));
             Validate.Positive(currentUserId, nameof(currentUserId));
 
-            var copy = await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync();
+            var copy = Validate.Exists(
+                await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync(),
+                $"Inventory record with id {inventoryRecordId}"
+            );
 
-            Validate.NotNull(copy, nameof(copy));
-
-            copy!.IsAvailable = true;
+            copy.IsAvailable = true;
             copy.LastModifiedByUserId = currentUserId;
             copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Today);
 
@@ -66,16 +67,18 @@ namespace Library.Services.Services
             return record;
         }
 
+        //Archive
         public async Task<bool> RemoveCopyAsync(int inventoryRecordId, int performedByUserId)
         {
             Validate.Positive(inventoryRecordId, nameof(inventoryRecordId));
             Validate.Positive(performedByUserId, nameof(performedByUserId));
 
-            var copy = await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync();
+            var copy = Validate.Exists(
+                await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync(),
+                $"Inventory record with id {inventoryRecordId}"
+            );
 
-            Validate.NotNull(copy, nameof(copy));
-
-            copy!.IsArchived = true;
+            copy.IsArchived = true;
             copy.ArchivedByUserId = performedByUserId;
             copy.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
             copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
@@ -98,8 +101,8 @@ namespace Library.Services.Services
         {
             Validate.Positive(bookId, nameof(bookId));
 
-            var all = _inventoryRepo.GetAll().AsNoTracking();
-            return all
+            return _inventoryRepo.GetAll()
+                .AsNoTracking()
                 .Where(r => r.BookId == bookId)
                 .OrderBy(r => r.Id);
         }
@@ -108,8 +111,8 @@ namespace Library.Services.Services
         {
             Validate.Positive(bookId, nameof(bookId));
 
-            var all = _inventoryRepo.GetAll().AsNoTracking();
-            return all
+            return _inventoryRepo.GetAll()
+                .AsNoTracking()
                 .Where(r => r.BookId == bookId && r.IsAvailable);
         }
 

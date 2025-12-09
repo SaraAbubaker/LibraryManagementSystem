@@ -1,4 +1,5 @@
 ﻿using Library.Shared.Exceptions;
+using System.Collections;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 
@@ -29,12 +30,11 @@ namespace Library.Shared.Helpers
                 throw new BadRequestException($"{name} must be greater than zero.");
         }
 
-        public static void Exists(object? entity, string name)
+        public static T Exists<T>(T? entity, string name)
         {
-            if (entity == null)
-                throw new NotFoundException($"{name} not found.");
+            if (entity == null) throw new NotFoundException(name);
+            return entity;
         }
-
 
         public static void ValidateModel(object model)
         {
@@ -64,7 +64,56 @@ namespace Library.Shared.Helpers
                         errors.Add($"{prop.Name} must be at least {strLen.MinimumLength} characters.");
                 }
 
-                //Positive integers (optional helper reuse)
+                //MinLength / MaxLength
+                var minLenAttr = prop.GetCustomAttribute<MinLengthAttribute>();
+                if (minLenAttr != null)
+                {
+                    if (value is string sMin && sMin.Length < minLenAttr.Length)
+                        errors.Add($"{prop.Name} must be at least {minLenAttr.Length} characters.");
+
+                    else if (value is ICollection cMin && cMin.Count < minLenAttr.Length)
+                        errors.Add($"{prop.Name} must contain at least {minLenAttr.Length} items.");
+                }
+
+                var maxLenAttr = prop.GetCustomAttribute<MaxLengthAttribute>();
+                if (maxLenAttr != null)
+                {
+                    if (value is string sMax && sMax.Length > maxLenAttr.Length)
+                        errors.Add($"{prop.Name} cannot be longer than {maxLenAttr.Length} characters.");
+
+                    else if (value is ICollection cMax && cMax.Count > maxLenAttr.Length)
+                        errors.Add($"{prop.Name} cannot contain more than {maxLenAttr.Length} items.");
+                }
+
+                //Range
+                var rangeAttr = prop.GetCustomAttribute<RangeAttribute>();
+                if (rangeAttr != null && value != null)
+                {
+                    try
+                    {
+                        var numeric = Convert.ToDouble(value);
+                        var min = Convert.ToDouble(rangeAttr.Minimum);
+                        var max = Convert.ToDouble(rangeAttr.Maximum);
+                        if (numeric < min || numeric > max)
+                            errors.Add($"{prop.Name} must be between {min} and {max}.");
+                    }
+                    catch
+                    {
+                        errors.Add($"{prop.Name}: Range attribute applied but value is not numeric.");
+                    }
+                }
+
+                //EmailAddress
+                var emailAttr = prop.GetCustomAttribute<EmailAddressAttribute>();
+                if (emailAttr != null && value is string emailStr && !string.IsNullOrWhiteSpace(emailStr))
+                {
+                    var attr = new EmailAddressAttribute();
+                    if (!attr.IsValid(emailStr))
+                        errors.Add($"{prop.Name} is not a valid email address.");
+                }
+
+
+                //Positive int (custom attribute)
                 if (Attribute.IsDefined(prop, typeof(PositiveAttribute)) && value is int intValue && intValue <= 0)
                 {
                     errors.Add($"{prop.Name} must be greater than zero.");

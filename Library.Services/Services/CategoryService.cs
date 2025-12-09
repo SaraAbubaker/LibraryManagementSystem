@@ -26,8 +26,7 @@ namespace Library.Services.Services
         //CRUD
         public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto, int userId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+            Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
 
             var category = dto.Adapt<Category>();
@@ -45,22 +44,22 @@ namespace Library.Services.Services
 
         public IQueryable<CategoryDto> GetAllCategoriesQuery()
         {
-            var categories = _categoryRepo.GetAll().AsNoTracking();
-
-            return categories
+            return _categoryRepo.GetAll()
+                .AsNoTracking()
                 .Select(c => c.Adapt<CategoryDto>());
         }
 
         public async Task<CategoryDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, nameof(dto.Name));
-            Validate.Positive(dto.Id, nameof(dto.Id));
+            Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
 
-            var category = await _categoryRepo.GetById(dto.Id).FirstOrDefaultAsync();
+            var category = Validate.Exists(
+                await _categoryRepo.GetById(dto.Id).FirstOrDefaultAsync(),
+                $"Category with id {dto.Id}"
+            );
 
-            category!.Name = dto.Name;
+            category.Name = dto.Name;
             category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
             category.LastModifiedByUserId = userId;
 
@@ -74,13 +73,15 @@ namespace Library.Services.Services
         {
             Validate.Positive(id, nameof(id));
 
-            var category = await _categoryRepo.GetById(id).FirstOrDefaultAsync();
+            var category = Validate.Exists(
+                await _categoryRepo.GetById(id).FirstOrDefaultAsync(),
+                $"Category with id {id}"
+            );
 
-            if (category!.IsArchived)
+            if (category.IsArchived)
                 throw new ConflictException($"Category with id {id} is already archived.");
 
-            var books =  _bookRepo.GetAll()
-                .Where(b => b.CategoryId == id);
+            var books =  _bookRepo.GetAll().Where(b => b.CategoryId == id);
 
             var unknownCategory = await _categoryRepo.GetById(-1).FirstOrDefaultAsync();
 

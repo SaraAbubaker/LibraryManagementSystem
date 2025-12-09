@@ -2,6 +2,7 @@
 using Library.Shared.DTOs.Book;
 using Library.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Library.API.Controllers
 {
@@ -16,13 +17,15 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetDetails(int id)
+        [HttpGet("query/{id}")]
+        public async Task<IActionResult> GetBookDetailsQuery(int id)
         {
             try
             {
-                var book = await _service.GetBookDetailsAsync(id);
+                var query = _service.GetBookDetailsQuery(id);
+                var book = await query.FirstOrDefaultAsync(); // Execute query
                 if (book == null) return NotFound();
+
                 return Ok(book);
             }
             catch (Exception ex)
@@ -31,13 +34,13 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("author/{authorId}")]
-        public async Task<IActionResult> GetByAuthor(int authorId)
+        [HttpGet("query/author/{authorId}")]
+        public IActionResult GetBooksByAuthorQuery(int authorId)
         {
             try
             {
-                var books = await _service.GetBooksByAuthorAsync(authorId);
-                return Ok(books);
+                var query = _service.GetBooksByAuthorQuery(authorId);
+                return Ok(query);
             }
             catch (Exception ex)
             {
@@ -45,13 +48,13 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("category/{categoryId}")]
-        public async Task<IActionResult> GetByCategory(int categoryId)
+        [HttpGet("query/category/{categoryId}")]
+        public IActionResult GetBooksByCategoryQuery(int categoryId)
         {
             try
             {
-                var books = await _service.GetBooksByCategoryAsync(categoryId);
-                return Ok(books);
+                var query = _service.GetBooksByCategoryQuery(categoryId);
+                return Ok(query);
             }
             catch (Exception ex)
             {
@@ -60,12 +63,12 @@ namespace Library.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(CreateBookDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> CreateBook([FromBody] CreateBookDto dto, [FromQuery] int userId)
         {
             try
             {
                 var book = await _service.CreateBookAsync(dto, userId);
-                return CreatedAtAction(nameof(GetDetails), new { id = book.Id }, book);
+                return CreatedAtAction(nameof(GetBookDetailsQuery), new { id = book.Id }, book); // Match service method
             }
             catch (Exception ex)
             {
@@ -91,12 +94,16 @@ namespace Library.API.Controllers
         }
 
         [HttpPut("archive/{id}")]
-        public async Task<IActionResult> Archive(int id, [FromQuery] int userId)
+        public async Task<IActionResult> ArchiveBook(int id, [FromQuery] int userId)
         {
             try
             {
-                await _service.ArchiveBookAsync(id, userId);
-                return Ok(await _service.GetBookDetailsAsync(id));
+                var success = await _service.ArchiveBookAsync(id, userId);
+                if (!success) return NotFound();
+
+                var query = _service.GetBookDetailsQuery(id);
+                var book = await query.FirstOrDefaultAsync();
+                return Ok(book);
             }
             catch (NotFoundException)
             {
@@ -108,13 +115,13 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] SearchBookParamsDto dto)
+        [HttpGet("query/search")]
+        public IActionResult SearchBooksQuery([FromQuery] SearchBookParamsDto dto)
         {
             try
             {
-                var books = await _service.SearchBooksAsync(dto);
-                return Ok(books);
+                var query = _service.SearchBooksQuery(dto);
+                return Ok(query);
             }
             catch (Exception ex)
             {

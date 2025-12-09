@@ -23,17 +23,19 @@ namespace Library.Services.Services
 
         //CRUD
         public async Task<AuthorListDto> CreateAuthorAsync(CreateAuthorDto dto, int userId)
-        {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.NotEmpty(dto.Name, nameof(dto.Name));
+        { 
+            Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
 
             var name = dto.Name.Trim();
             var email = dto.Email?.Trim();
 
-            var existingAuthors = _authorRepo.GetAll();
-            if (existingAuthors.Any(a => string.Equals(a.Name, name, StringComparison.OrdinalIgnoreCase)))
-                throw new InvalidOperationException($"An author with the name '{name}' already exists.");
+            var nameLower = name.ToLowerInvariant();
+            var exists = await _authorRepo.GetAll()
+                .AnyAsync(a => a.Name.ToLower() == nameLower);
+
+            if (exists)
+                throw new ConflictException($"An author with the name '{name}' already exists.");
 
             var author = new Author
             {
@@ -89,8 +91,8 @@ namespace Library.Services.Services
 
         public async Task<bool> EditAuthorAsync(UpdateAuthorDto dto, int userId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.Positive(dto.Id, nameof(dto.Id));
+            Validate.ValidateModel(dto);
+            Validate.Positive(userId, nameof(userId));
 
             var name = (dto.Name ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(name))
@@ -98,8 +100,7 @@ namespace Library.Services.Services
 
             var author = await _authorRepo.GetById(dto.Id).FirstOrDefaultAsync();
 
-            if (author == null)
-                throw new InvalidOperationException($"Author with id {dto.Id} not found.");
+            Validate.Exists(author, "Author");
 
             var nameLower = name.ToLower();
             var exists = await _authorRepo.GetAll()
@@ -107,10 +108,10 @@ namespace Library.Services.Services
                 .AnyAsync(a => a.Name.ToLower() == nameLower);
 
             if (exists)
-                throw new InvalidOperationException($"Another author with the name '{name}' already exists.");
+                throw new ConflictException($"Another author with the name '{name}' already exists.");
 
-            author.Name = name;
-            author.Email = dto.Email;
+            author!.Name = name;
+            author.Email = dto.Email?.Trim() ?? string.Empty;
             author.LastModifiedByUserId = userId;
             author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
@@ -125,16 +126,17 @@ namespace Library.Services.Services
             Validate.Positive(performedByUserId, nameof(performedByUserId));
 
             var author = await _authorRepo.GetById(id).FirstOrDefaultAsync();
-            if (author == null) throw new NotFoundException($"Author with id {id} not found.");
+            Validate.Exists(author, "Author");
 
-            var books = (_bookRepo.GetAll()).Where(b => b.AuthorId == id);
+            var books = (_bookRepo.GetAll())
+                .Where(b => b.AuthorId == id);
             foreach (var book in books)
             {
                 book.AuthorId = -1; // Unknown
                 await _bookRepo.UpdateAsync(book);
             }
 
-            author.Name = "Unknown";
+            author!.Name = "Unknown";
             author.Email = string.Empty;
             author.IsArchived = true;
             author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);

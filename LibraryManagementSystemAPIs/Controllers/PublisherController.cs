@@ -15,13 +15,13 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("query")]
+        public IActionResult GetAllQuery()
         {
             try
             {
-                var publishers = await _service.GetAllPublishersAsync();
-                return Ok(publishers);
+                var query = _service.GetAllPublishersQuery();
+                return Ok(query);
             }
             catch (Exception ex)
             {
@@ -29,13 +29,13 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("query/{id}")]
+        public IActionResult GetByIdQuery(int id)
         {
             try
             {
-                var publisher = await _service.GetPublisherByIdAsync(id);
-                return Ok(publisher);
+                var query = _service.GetPublisherByIdQuery(id);
+                return Ok(query);
             }
             catch (Exception ex)
             {

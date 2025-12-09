@@ -47,8 +47,7 @@ namespace Library.Services.Services
         public async Task<bool> HasAvailableCopyAsync(int bookId)
         {
             Validate.Positive(bookId, nameof(bookId));
-            var copies = _inventoryService.GetAvailableCopiesQuery(bookId);
-            return copies.Any();
+            return _inventoryService.GetAvailableCopiesQuery(bookId).Any();
         }
 
         public IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId)
@@ -63,8 +62,7 @@ namespace Library.Services.Services
         //Borrow & Return
         public async Task<BorrowRecord> BorrowBookAsync(RequestBorrowDto dto, int userId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.Positive(dto.InventoryRecordId, nameof(dto.InventoryRecordId));
+            Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
 
             var copy = await _inventoryRepo.GetById(dto.InventoryRecordId).FirstOrDefaultAsync();
@@ -98,9 +96,12 @@ namespace Library.Services.Services
             Validate.Positive(borrowRecordId, nameof(borrowRecordId));
             Validate.Positive(currentUserId, nameof(currentUserId));
 
-            var record = await _borrowRepo.GetById(borrowRecordId).FirstOrDefaultAsync();
-            
-            if (record!.ReturnDate != null)
+            var record = Validate.Exists(
+                await _borrowRepo.GetById(borrowRecordId).FirstOrDefaultAsync(),
+                $"Borrow record with id {borrowRecordId}"
+            );
+
+            if (record.ReturnDate != null)
                 throw new ConflictException($"Borrow record with id {borrowRecordId} has already been returned.");
 
             record.ReturnDate = DateOnly.FromDateTime(DateTime.Now);
@@ -117,10 +118,8 @@ namespace Library.Services.Services
         public IQueryable<BorrowRecord> GetOverdueRecordsQuery()
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
-
-            var allRecords = _borrowRepo.GetAll().AsNoTracking();
-
-            return allRecords
+            return _borrowRepo.GetAll()
+                .AsNoTracking()
                 .Where(r => r.ReturnDate == null && r.DueDate < today);
         }
 

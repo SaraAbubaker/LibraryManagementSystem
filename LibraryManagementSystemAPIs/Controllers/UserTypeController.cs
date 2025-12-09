@@ -15,34 +15,6 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            try
-            {
-                var userTypes = await _service.GetAllUserTypesAsync();
-                return Ok(userTypes);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            try
-            {
-                var userType = await _service.GetUserTypeByIdAsync(id);
-                return Ok(userType);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateUserTypeDto dto, [FromQuery] int createdByUserId)
         {
@@ -64,6 +36,34 @@ namespace Library.API.Controllers
             {
                 var updated = await _service.UpdateUserTypeAsync(dto, userId, id);
                 return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("query")]
+        public IActionResult GetAllQuery()
+        {
+            try
+            {
+                var query = _service.GetAllUserTypesQuery();
+                return Ok(query);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("query/{id}")]
+        public IActionResult GetByIdQuery(int id)
+        {
+            try
+            {
+                var query = _service.GetUserTypeByIdQuery(id);
+                return Ok(query);
             }
             catch (Exception ex)
             {

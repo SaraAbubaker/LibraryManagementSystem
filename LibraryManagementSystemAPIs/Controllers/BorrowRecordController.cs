@@ -15,13 +15,13 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("query")]
+        public IActionResult GetBorrowDetailsQuery()
         {
             try
             {
-                var result = await _service.GetBorrowDetailsAsync();
-                return Ok(result);
+                var query = _service.GetBorrowDetailsQuery();
+                return Ok(query);
             }
             catch (Exception ex)
             {
@@ -58,13 +58,13 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("overdue")]
-        public async Task<IActionResult> GetOverdue()
+        [HttpGet("query/overdue")]
+        public IActionResult GetOverdueRecordsQuery()
         {
             try
             {
-                var result = await _service.GetOverdueRecordsAsync();
-                return Ok(result);
+                var query = _service.GetOverdueRecordsQuery();
+                return Ok(query);
             }
             catch (Exception ex)
             {

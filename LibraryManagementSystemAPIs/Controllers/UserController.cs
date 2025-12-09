@@ -8,11 +8,11 @@ namespace Library.API.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly IUserService Service;
+        private readonly IUserService _service;
 
         public UserController(IUserService service)
         {
-            Service = service;
+            _service = service;
         }
 
         [HttpPost("register")]
@@ -20,7 +20,7 @@ namespace Library.API.Controllers
         {
             try
             {
-                var result = await Service.RegisterUserAsync(dto);
+                var result = await _service.RegisterUserAsync(dto);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -34,7 +34,7 @@ namespace Library.API.Controllers
         {
             try
             {
-                var result = await Service.LoginUserAsync(dto);
+                var result = await _service.LoginUserAsync(dto);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -43,31 +43,31 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("query")]
+        public IActionResult GetAllQuery()
         {
             try
             {
-                var result = await Service.GetUserByIdAsync(id);
-                return Ok(result);
+                var query = _service.GetAllUsersQuery();
+                return Ok(query);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("query/{id}")]
+        public IActionResult GetByIdQuery(int id)
+        {
+            try
+            {
+                var query = _service.GetUserByIdQuery(id);
+                return Ok(query);
             }
             catch (KeyNotFoundException)
             {
                 return NotFound("User not found.");
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            try
-            {
-                var result = await Service.GetAllUsersAsync();
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
             }
         }
 
@@ -76,7 +76,7 @@ namespace Library.API.Controllers
         {
             try
             {
-                var result = await Service.ArchiveUserAsync(id, performedByUserId);
+                var result = await _service.ArchiveUserAsync(id, performedByUserId);
                 return Ok(result);
             }
             catch (KeyNotFoundException)

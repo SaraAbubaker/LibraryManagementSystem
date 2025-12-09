@@ -1,5 +1,6 @@
-﻿using Library.Shared.DTOs.Category;
-using Library.Services.Interfaces;
+﻿using Library.Services.Interfaces;
+using Library.Shared.DTOs.Category;
+using Library.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.API.Controllers
@@ -15,13 +16,13 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("query")]
+        public IActionResult GetAllCategoriesQuery()
         {
             try
             {
-                var result = await _service.GetAllCategoriesAsync();
-                return Ok(result);
+                var query = _service.GetAllCategoriesQuery();
+                return Ok(query);
             }
             catch (Exception ex)
             {
@@ -30,7 +31,7 @@ namespace Library.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create( CreateCategoryDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> CreateCategory( CreateCategoryDto dto, [FromQuery] int userId)
         {
             try
             {
@@ -44,7 +45,7 @@ namespace Library.API.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> Update(UpdateCategoryDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> UpdateCategory(UpdateCategoryDto dto, [FromQuery] int userId)
         {
             try
             {
@@ -62,7 +63,7 @@ namespace Library.API.Controllers
         }
 
         [HttpPut("archive/{id}")]
-        public async Task<IActionResult> Archive(int id, [FromQuery] int userId)
+        public async Task<IActionResult> ArchiveCategory(int id, [FromQuery] int userId)
         {
             try
             {
@@ -72,6 +73,10 @@ namespace Library.API.Controllers
                     return NotFound("Category not found.");
 
                 return Ok("Category archived successfully.");
+            }
+            catch (ConflictException ex)
+            {
+                return Conflict(ex.Message);
             }
             catch (Exception ex)
             {

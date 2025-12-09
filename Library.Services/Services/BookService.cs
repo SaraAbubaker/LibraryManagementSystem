@@ -24,13 +24,8 @@ namespace Library.Services.Services
         //CRUD
         public async Task<Book> CreateBookAsync(CreateBookDto dto, int currentUserId)
         {
-            Validate.NotNull(dto, nameof(dto));
+            Validate.ValidateModel(dto);
             Validate.Positive(currentUserId, nameof(currentUserId));
-
-            if (string.IsNullOrWhiteSpace(dto.Title))
-                throw new ArgumentException("Title is required.", nameof(dto.Title));
-            if (dto.PublisherId <= 0)
-                throw new ArgumentException("PublisherId must be provided and positive.", nameof(dto.PublisherId));
 
             var book = dto.Adapt<Book>();  //Mapping using Mapster
 
@@ -66,6 +61,8 @@ namespace Library.Services.Services
 
         public IQueryable<BookListDto> GetBooksByAuthorQuery(int authorId)
         {
+            Validate.Positive(authorId, nameof(authorId));
+
             return _bookRepo.GetAll()
                 .AsNoTracking()
                 .Where(b => b.AuthorId == authorId)
@@ -84,37 +81,34 @@ namespace Library.Services.Services
 
         public IQueryable<BookListDto> GetBooksByCategoryQuery(int categoryId)
         {
+            Validate.Positive(categoryId, nameof(categoryId));
+
             var books = _bookRepo.GetAll().AsNoTracking();
 
-            books = books.Select(b => new
-            {
-                Book = b,
-                CategoryIdAdjusted = b.CategoryId == categoryId ? categoryId : -1
-            })
-            .Where(x => x.CategoryIdAdjusted == categoryId)
-            .Select(x => x.Book);
-
-            return books.Select(b => new BookListDto
-            {
-                Id = b.Id,
-                Title = b.Title,
-                PublishDate = b.PublishDate,
-                AuthorName = b.Author != null ? b.Author.Name : "Unknown",
-                CategoryName = b.Category != null ? b.Category.Name : "Unknown",
-                PublisherName = b.Publisher != null ? b.Publisher.Name : "Unknown",
-                IsAvailable = b.InventoryRecords.Any(r => r.IsAvailable)
-            });
+            return _bookRepo.GetAll()
+                .AsNoTracking()
+                .Where(b => b.CategoryId == categoryId)
+                .Select(b => new BookListDto
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    PublishDate = b.PublishDate,
+                    AuthorName = b.Author != null ? b.Author.Name : "Unknown",
+                    CategoryName = b.Category != null ? b.Category.Name : "Unknown",
+                    PublisherName = b.Publisher != null ? b.Publisher.Name : "Unknown",
+                    IsAvailable = b.InventoryRecords.Any(r => r.IsAvailable)
+                });
         }
 
         public async Task<bool> UpdateBookAsync(UpdateBookDto dto, int currentUserId)
         {
-            Validate.NotNull(dto, nameof(dto));
-            Validate.Positive(dto.Id, nameof(dto.Id));
+            Validate.ValidateModel(dto);
             Validate.Positive(currentUserId, nameof(currentUserId));
 
-            var book = await _bookRepo.GetById(dto.Id).FirstOrDefaultAsync();
-            if (book == null)
-                throw new NotFoundException($"Book with id {dto.Id} not found.");
+            var book = Validate.Exists(
+                await _bookRepo.GetById(dto.Id).FirstOrDefaultAsync(),
+                $"Book with id {dto.Id}"
+            );
 
             if (!string.IsNullOrWhiteSpace(dto.Title)) book.Title = dto.Title;
             if (dto.PublishDate.HasValue) book.PublishDate = dto.PublishDate.Value;
@@ -136,9 +130,10 @@ namespace Library.Services.Services
             Validate.Positive(bookId, nameof(bookId));
             Validate.Positive(performedByUserId, nameof(performedByUserId));
 
-            var book = await _bookRepo.GetById(bookId).FirstOrDefaultAsync();
-            if (book == null)
-                throw new NotFoundException($"Book with id {bookId} not found.");
+            var book = Validate.Exists(
+                await _bookRepo.GetById(bookId).FirstOrDefaultAsync(),
+                $"Book with id {bookId}"
+            );
 
             book.IsArchived = true;
             book.ArchivedByUserId = performedByUserId;
@@ -153,12 +148,11 @@ namespace Library.Services.Services
         //Search method (filter, sort, pagination)
         public IQueryable<BookListDto> SearchBooksQuery(SearchBookParamsDto dto)
         {
-            Validate.NotNull(dto, nameof(dto));
+            Validate.ValidateModel(dto);
 
             var skip = (Math.Max(1, dto.Page) - 1) * Math.Max(1, dto.PageSize);
 
-            var booksAll = _bookRepo.GetAll().AsNoTracking();
-            var books = booksAll.AsQueryable();
+            var books = _bookRepo.GetAll().AsNoTracking();
 
             //Search
             if (!string.IsNullOrWhiteSpace(dto.SearchParam))
@@ -191,9 +185,9 @@ namespace Library.Services.Services
                 books = books.Where(b => (b.InventoryRecords.Count(r => r.IsAvailable) > 0) == available);
             }
 
-
             if (dto.PublishDate.HasValue)
                 books = books.Where(b => b.PublishDate == dto.PublishDate.Value);
+
 
             //Sorting
             books = (dto.SortBy?.Trim().ToLower()) switch
