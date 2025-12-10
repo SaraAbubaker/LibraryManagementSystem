@@ -28,19 +28,21 @@ namespace Library.Services.Services
         //ListAll
         public IQueryable<BorrowDto> GetBorrowDetailsQuery()
         {
-            var allRecords = _borrowRepo.GetAll().AsNoTracking();
-
-            return allRecords.Select(b => new BorrowDto
-            {
-                Id = b.Id,
-                BorrowDate = b.BorrowDate,
-                DueDate = b.DueDate,
-                ReturnDate = b.ReturnDate,
-                CopyCode = b.InventoryRecord != null ? b.InventoryRecord.CopyCode : null,
-                Username = b.User != null ? b.User.Username : null,
-                IsOverdue = IsBorrowOverdue(b),
-                OverdueDays = CalculateOverdueDays(b)
-            });
+            return _borrowRepo.GetAll()
+                .AsNoTracking()
+                .Include(b => b.InventoryRecord)
+                .Include(b => b.User)
+                .Select(b => new BorrowDto
+                {
+                    Id = b.Id,
+                    BorrowDate = b.BorrowDate,
+                    DueDate = b.DueDate,
+                    ReturnDate = b.ReturnDate,
+                    CopyCode = b.InventoryRecord != null ? b.InventoryRecord.CopyCode : null,
+                    Username = b.User != null ? b.User.Username : null,
+                    IsOverdue = IsBorrowOverdue(b),
+                    OverdueDays = CalculateOverdueDays(b)
+                });
         }
 
         //Availability
@@ -65,8 +67,12 @@ namespace Library.Services.Services
             Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
 
-            var copy = await _inventoryRepo.GetById(dto.InventoryRecordId).FirstOrDefaultAsync();
-            if (copy == null || !copy.IsAvailable)
+            var copy = Validate.Exists(
+                await _inventoryRepo.GetById(dto.InventoryRecordId).FirstOrDefaultAsync(),
+                dto.InventoryRecordId
+            );
+
+            if (!copy.IsAvailable)
                 throw new ConflictException("Inventory copy is not available.");
 
             copy.IsAvailable = false;
@@ -98,7 +104,7 @@ namespace Library.Services.Services
 
             var record = Validate.Exists(
                 await _borrowRepo.GetById(borrowRecordId).FirstOrDefaultAsync(),
-                $"Borrow record with id {borrowRecordId}"
+                borrowRecordId
             );
 
             if (record.ReturnDate != null)

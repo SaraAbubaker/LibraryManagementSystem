@@ -30,11 +30,13 @@ namespace Library.Shared.Helpers
                 throw new BadRequestException($"{name} must be greater than zero.");
         }
 
-        public static T Exists<T>(T? entity, string name)
+        public static T Exists<T>(T? entity, int id)
         {
-            if (entity == null) throw new NotFoundException(name);
+            if (entity == null)
+                throw new NotFoundException($"{typeof(T).Name} with id {id} is not found");
             return entity;
         }
+
 
         public static void ValidateModel(object model)
         {

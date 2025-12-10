@@ -39,7 +39,7 @@ namespace Library.Services.Services
             await _publisherRepo.AddAsync(publisher);
 
             var publisherDto = publisher.Adapt<PublisherDto>();
-            publisherDto.InventoryCount = publisher.InventoryRecords.Count;
+            publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
 
             return publisherDto;
         }
@@ -47,6 +47,7 @@ namespace Library.Services.Services
         public IQueryable<PublisherDto> GetAllPublishersQuery()
         {
             return _publisherRepo.GetAll()
+                .Include(p => p.InventoryRecords)
                 .AsNoTracking()
                 .Select(p => new PublisherDto
                 {
@@ -61,6 +62,7 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
 
             return _publisherRepo.GetAll()
+                .Include(p => p.InventoryRecords)
                 .AsNoTracking()
                 .Where(p => p.Id == id)
                 .Select(p => new PublisherDto
@@ -78,8 +80,10 @@ namespace Library.Services.Services
             Validate.Positive(userId, nameof(userId));
 
             var publisher = Validate.Exists(
-                await _publisherRepo.GetById(publisherId).FirstOrDefaultAsync(),
-                $"Publisher with id {publisherId}"
+                await _publisherRepo.GetById(publisherId)
+                    .Include(p => p.InventoryRecords)
+                    .FirstOrDefaultAsync(), 
+                publisherId
             );
 
             publisher.Name = dto.Name;
@@ -100,8 +104,10 @@ namespace Library.Services.Services
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
             var publisher = Validate.Exists(
-                await _publisherRepo.GetById(id).FirstOrDefaultAsync(),
-                $"Publisher with id {id}"
+                await _publisherRepo.GetById(id)
+                    .Include(p => p.InventoryRecords)
+                    .FirstOrDefaultAsync(), 
+                id
             );
 
             publisher.IsArchived = true;

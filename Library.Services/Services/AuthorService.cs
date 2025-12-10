@@ -31,10 +31,11 @@ namespace Library.Services.Services
             var email = dto.Email?.Trim();
 
             var nameLower = name.ToLowerInvariant();
-            var exists = await _authorRepo.GetAll()
+
+            var authorExists = await _authorRepo.GetAll()
                 .AnyAsync(a => a.Name.ToLower() == nameLower);
 
-            if (exists)
+            if (authorExists)
                 throw new ConflictException($"An author with the name '{name}' already exists.");
 
             var author = new Author
@@ -52,8 +53,7 @@ namespace Library.Services.Services
 
             var result = author.Adapt<AuthorListDto>();
 
-            var books = _bookRepo.GetAll();
-            result.BookCount = books.Count(b => b.AuthorId == author.Id);
+            result.BookCount = await _bookRepo.GetAll().CountAsync(b => b.AuthorId == author.Id);
 
             return result;
         }
@@ -61,13 +61,14 @@ namespace Library.Services.Services
         public IQueryable<AuthorListDto> ListAuthorsQuery()
         {
             return _authorRepo.GetAll()
+                .Include(a => a.Books)
                 .AsNoTracking()
                 .OrderBy(a => a.Name)
                 .Select(a => new AuthorListDto
                 {
                     Id = a.Id,
                     Name = a.Name,
-                    BookCount = a.Books.Count()
+                    BookCount = a.Books.Count
                 });
         }
 
@@ -76,6 +77,7 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
 
             return _authorRepo.GetAll()
+                .Include(a => a.Books)
                 .AsNoTracking()
                 .Where(a => a.Id == id)
                 .Select(a => new AuthorListDto
@@ -83,9 +85,7 @@ namespace Library.Services.Services
                     Id = a.Id,
                     Name = a.Name,
                     Email = a.Email,
-
-                    BookCount = _bookRepo.GetAll()
-                        .Count(b => b.AuthorId == a.Id)
+                    BookCount = a.Books.Count
                 });
         }
 
@@ -95,12 +95,14 @@ namespace Library.Services.Services
             Validate.Positive(userId, nameof(userId));
 
             var name = (dto.Name ?? string.Empty).Trim();
-            if (string.IsNullOrEmpty(name))
-                throw new ValidationException("Name is required.");
+            Validate.NotEmpty(name, nameof(dto.Name));
 
-            var author = await _authorRepo.GetById(dto.Id).FirstOrDefaultAsync();
-
-            Validate.Exists(author, "Author");
+            var author = Validate.Exists(
+                await _authorRepo.GetAll()
+                    .Include(a => a.Books)
+                    .FirstOrDefaultAsync(a => a.Id == dto.Id),
+                dto.Id
+            );
 
             var nameLower = name.ToLower();
             var exists = await _authorRepo.GetAll()
@@ -110,7 +112,7 @@ namespace Library.Services.Services
             if (exists)
                 throw new ConflictException($"Another author with the name '{name}' already exists.");
 
-            author!.Name = name;
+            author.Name = name;
             author.Email = dto.Email?.Trim() ?? string.Empty;
             author.LastModifiedByUserId = userId;
             author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
@@ -125,18 +127,20 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(performedByUserId, nameof(performedByUserId));
 
-            var author = await _authorRepo.GetById(id).FirstOrDefaultAsync();
-            Validate.Exists(author, "Author");
+            var author = Validate.Exists( 
+                await _authorRepo.GetAll()
+                .Include(a => a.Books)
+                .FirstOrDefaultAsync(a => a.Id == id),
+                id
+                );
 
-            var books = (_bookRepo.GetAll())
-                .Where(b => b.AuthorId == id);
-            foreach (var book in books)
+            foreach (var book in author.Books)
             {
                 book.AuthorId = -1; // Unknown
                 await _bookRepo.UpdateAsync(book);
             }
 
-            author!.Name = "Unknown";
+            author.Name = "Unknown";
             author.Email = string.Empty;
             author.IsArchived = true;
             author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);

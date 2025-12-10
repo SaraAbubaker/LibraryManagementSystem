@@ -65,8 +65,10 @@ namespace Library.Services.Services
             Validate.Positive(userTypeId, nameof(userTypeId));
             Validate.Positive(userId, nameof(userId));
 
-            var userType = Validate.Exists(await _userTypeRepo.GetById(userTypeId).FirstOrDefaultAsync(),
-                $"UserType with id {userTypeId}");
+            var userType = Validate.Exists(
+                await _userTypeRepo.GetById(userTypeId).FirstOrDefaultAsync(),
+                userTypeId
+            );
 
             userType.Role = dto.Role;
             userType.LastModifiedByUserId = userId;
@@ -82,8 +84,10 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
             Validate.Positive(archivedByUserId, nameof(archivedByUserId));
 
-            var userType = Validate.Exists(await _userTypeRepo.GetById(id).FirstOrDefaultAsync(),
-                $"UserType with id {id}");
+            var userType = Validate.Exists(
+                await _userTypeRepo.GetById(id).FirstOrDefaultAsync(),
+                id
+            );
 
             userType.IsArchived = true;
             userType.ArchivedByUserId = archivedByUserId;

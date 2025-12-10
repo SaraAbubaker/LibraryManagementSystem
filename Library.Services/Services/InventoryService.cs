@@ -31,7 +31,7 @@ namespace Library.Services.Services
 
             var copy = Validate.Exists(
                 await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync(),
-                $"Inventory record with id {inventoryRecordId}"
+                inventoryRecordId
             );
 
             copy.IsAvailable = true;
@@ -75,7 +75,7 @@ namespace Library.Services.Services
 
             var copy = Validate.Exists(
                 await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync(),
-                $"Inventory record with id {inventoryRecordId}"
+                inventoryRecordId
             );
 
             copy.IsArchived = true;

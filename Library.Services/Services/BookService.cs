@@ -45,6 +45,10 @@ namespace Library.Services.Services
             Validate.Positive(bookId, nameof(bookId));
 
             return _bookRepo.GetAll()
+                .Include(b => b.Author)
+                .Include(b => b.Category)
+                .Include(b => b.Publisher)
+                .Include(b => b.InventoryRecords)
                 .AsNoTracking()
                 .Where(b => b.Id == bookId)
                 .Select(b => new BookListDto
@@ -64,6 +68,10 @@ namespace Library.Services.Services
             Validate.Positive(authorId, nameof(authorId));
 
             return _bookRepo.GetAll()
+                .Include(b => b.Author)
+                .Include(b => b.Category)
+                .Include(b => b.Publisher)
+                .Include(b => b.InventoryRecords)
                 .AsNoTracking()
                 .Where(b => b.AuthorId == authorId)
                 .Select(b => new BookListDto
@@ -86,6 +94,10 @@ namespace Library.Services.Services
             var books = _bookRepo.GetAll().AsNoTracking();
 
             return _bookRepo.GetAll()
+                .Include(b => b.Author)
+                .Include(b => b.Category)
+                .Include(b => b.Publisher)
+                .Include(b => b.InventoryRecords)
                 .AsNoTracking()
                 .Where(b => b.CategoryId == categoryId)
                 .Select(b => new BookListDto
@@ -106,8 +118,9 @@ namespace Library.Services.Services
             Validate.Positive(currentUserId, nameof(currentUserId));
 
             var book = Validate.Exists(
-                await _bookRepo.GetById(dto.Id).FirstOrDefaultAsync(),
-                $"Book with id {dto.Id}"
+                await _bookRepo.GetAll()
+                    .FirstOrDefaultAsync(b => b.Id == dto.Id),
+                dto.Id
             );
 
             if (!string.IsNullOrWhiteSpace(dto.Title)) book.Title = dto.Title;
@@ -131,8 +144,9 @@ namespace Library.Services.Services
             Validate.Positive(performedByUserId, nameof(performedByUserId));
 
             var book = Validate.Exists(
-                await _bookRepo.GetById(bookId).FirstOrDefaultAsync(),
-                $"Book with id {bookId}"
+                await _bookRepo.GetAll()
+                    .FirstOrDefaultAsync(b => b.Id == bookId),
+                bookId
             );
 
             book.IsArchived = true;
@@ -152,7 +166,12 @@ namespace Library.Services.Services
 
             var skip = (Math.Max(1, dto.Page) - 1) * Math.Max(1, dto.PageSize);
 
-            var books = _bookRepo.GetAll().AsNoTracking();
+            var books = _bookRepo.GetAll()
+                .Include(b => b.Author) 
+                .Include(b => b.Category) 
+                .Include(b => b.Publisher) 
+                .Include(b => b.InventoryRecords)
+                .AsNoTracking();
 
             //Search
             if (!string.IsNullOrWhiteSpace(dto.SearchParam))

@@ -56,7 +56,7 @@ namespace Library.Services.Services
 
             var category = Validate.Exists(
                 await _categoryRepo.GetById(dto.Id).FirstOrDefaultAsync(),
-                $"Category with id {dto.Id}"
+                dto.Id
             );
 
             category.Name = dto.Name;
@@ -75,7 +75,7 @@ namespace Library.Services.Services
 
             var category = Validate.Exists(
                 await _categoryRepo.GetById(id).FirstOrDefaultAsync(),
-                $"Category with id {id}"
+                id
             );
 
             if (category.IsArchived)

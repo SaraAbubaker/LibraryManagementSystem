@@ -40,8 +40,8 @@ namespace Library.Services.Services
 
             //Normal user
             var userType = Validate.Exists(
-                _userTypeRepo.GetAll().FirstOrDefault(ut => ut.Role == "Normal"),
-                "Default user type 'Normal'"
+                _userTypeRepo.GetById(-2).FirstOrDefault(),
+                -2
             );
 
             var user = dto.Adapt<User>();
@@ -99,6 +99,8 @@ namespace Library.Services.Services
             Validate.Positive(id, nameof(id));
 
             return _userRepo.GetAll()
+                .Include(u => u.UserType)
+                .Include(u => u.BorrowRecords)
                 .AsNoTracking()
                 .Where(u => u.Id == id)
                 .Select(u => new UserDto
@@ -114,6 +116,8 @@ namespace Library.Services.Services
         public IQueryable<UserDto> GetAllUsersQuery()
         {
             return _userRepo.GetAll()
+                .Include(u => u.UserType)
+                .Include(u => u.BorrowRecords)
                 .AsNoTracking()
                 .Select(u => new UserDto
                 {
@@ -132,10 +136,10 @@ namespace Library.Services.Services
 
             var user = Validate.Exists(
                 await _userRepo.GetById(id).FirstOrDefaultAsync(),
-                $"User with id {id}"
+                id
             );
 
-            if (user!.BorrowRecords != null && user.BorrowRecords.Any(br => br.ReturnDate == null))
+            if (user.BorrowRecords != null && user.BorrowRecords.Any(br => br.ReturnDate == null))
                 throw new InvalidOperationException("User has active borrowed books. Return them before deleting.");
 
             user.IsArchived = true;
