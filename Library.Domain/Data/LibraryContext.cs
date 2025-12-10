@@ -30,7 +30,7 @@ namespace Library.Domain.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // DateOnly converter (if you use DateOnly)
+            #region DateOnly converter
             var dateOnlyConverter = new ValueConverter<DateOnly, DateTime>(
                 d => d.ToDateTime(TimeOnly.MinValue),
                 dt => DateOnly.FromDateTime(dt)
@@ -47,10 +47,11 @@ namespace Library.Domain.Data
                 {
                     modelBuilder.Entity(clrType)
                         .Property(prop.Name)
-                        .HasConversion(dateOnlyConverter);
+                        .HasConversion(dateOnlyConverter)
+                        .HasColumnType("date");
                 }
             }
-
+            #endregion
 
             #region Relationships
 
@@ -126,8 +127,7 @@ namespace Library.Domain.Data
                 .IsUnique();
 
 
-
-            //Seeding
+            #region Seeding
             modelBuilder.Entity<Author>().HasData(
                 new Author { Id = -1, Name = "Unknown", Email = string.Empty, CreatedDate = today });
 
@@ -141,6 +141,8 @@ namespace Library.Domain.Data
                 new UserType { Id = -1, Role = "Admin", CreatedDate = today },
                 new UserType { Id = -2, Role = "Normal", CreatedDate = today }
             );
+            #endregion
+
 
             //Default new users to Normal role
             modelBuilder.Entity<User>()
