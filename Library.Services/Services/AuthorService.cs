@@ -33,9 +33,9 @@ namespace Library.Services.Services
             var nameLower = name.ToLowerInvariant();
 
             var authorExists = await _authorRepo.GetAll()
-                .AnyAsync(a => a.Name.ToLower() == nameLower);
+                .FirstOrDefaultAsync(a => a.Name.ToLower() == nameLower);
 
-            if (authorExists)
+            if (authorExists != null)
                 throw new ConflictException($"An author with the name '{name}' already exists.");
 
             var author = new Author
@@ -55,6 +55,7 @@ namespace Library.Services.Services
 
             result.BookCount = await _bookRepo.GetAll().CountAsync(b => b.AuthorId == author.Id);
 
+            await _authorRepo.CommitAsync();
             return result;
         }
 
@@ -118,6 +119,7 @@ namespace Library.Services.Services
             author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _authorRepo.UpdateAsync(author);
+            await _authorRepo.CommitAsync();
 
             return true;
         }
@@ -149,6 +151,8 @@ namespace Library.Services.Services
             author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _authorRepo.UpdateAsync(author);
+            await _authorRepo.CommitAsync();
+
             return true;
         }
     }

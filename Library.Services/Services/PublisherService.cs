@@ -35,11 +35,12 @@ namespace Library.Services.Services
                 IsArchived = false
             };
 
-            //repository handles savechanges 
             await _publisherRepo.AddAsync(publisher);
 
             var publisherDto = publisher.Adapt<PublisherDto>();
             publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
+
+            await _publisherRepo.CommitAsync();
 
             return publisherDto;
         }
@@ -94,6 +95,8 @@ namespace Library.Services.Services
 
             var publisherDto = publisher.Adapt<PublisherDto>();
             publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
+
+            await _publisherRepo.CommitAsync();
 
             return publisherDto;
         }

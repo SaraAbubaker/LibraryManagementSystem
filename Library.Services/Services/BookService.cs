@@ -36,6 +36,7 @@ namespace Library.Services.Services
             book.IsArchived = false;
 
             await _bookRepo.AddAsync(book);
+            await _bookRepo.CommitAsync();
 
             return book;
         }
@@ -91,8 +92,6 @@ namespace Library.Services.Services
         {
             Validate.Positive(categoryId, nameof(categoryId));
 
-            var books = _bookRepo.GetAll().AsNoTracking();
-
             return _bookRepo.GetAll()
                 .Include(b => b.Author)
                 .Include(b => b.Category)
@@ -135,6 +134,8 @@ namespace Library.Services.Services
             book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _bookRepo.UpdateAsync(book);
+            await _bookRepo.CommitAsync();
+
             return true;
         }
 
@@ -156,6 +157,7 @@ namespace Library.Services.Services
             book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _bookRepo.UpdateAsync(book);
+            await _bookRepo.CommitAsync();
             return true;
         }
 
@@ -164,7 +166,8 @@ namespace Library.Services.Services
         {
             Validate.ValidateModel(dto);
 
-            var skip = (Math.Max(1, dto.Page) - 1) * Math.Max(1, dto.PageSize);
+            dto.PageSize = 3;
+            int skip = (Math.Max(1, dto.Page) - 1) * dto.PageSize;
 
             var books = _bookRepo.GetAll()
                 .Include(b => b.Author) 
@@ -187,25 +190,27 @@ namespace Library.Services.Services
 
             //Filter
             if (!string.IsNullOrWhiteSpace(dto.Title))
-                books = books.Where(b => b.Title != null && b.Title.Contains(dto.Title.Trim(), StringComparison.OrdinalIgnoreCase));
-
-            if (dto.AuthorId.HasValue)
-                books = books.Where(b => b.AuthorId == dto.AuthorId.Value);
-
-            if (dto.CategoryId.HasValue)
-                books = books.Where(b => b.CategoryId == dto.CategoryId.Value);
-
-            if (dto.PublisherId.HasValue)
-                books = books.Where(b => b.PublisherId == dto.PublisherId.Value);
-
-            if (dto.IsAvailable.HasValue)
             {
-                bool available = dto.IsAvailable.Value;
-                books = books.Where(b => (b.InventoryRecords.Count(r => r.IsAvailable) > 0) == available);
+                var searchTitle = dto.Title.Trim();
+                books = books.Where(b => b.Title != null && EF.Functions.Like(b.Title, $"%{searchTitle}%"));
             }
 
+            if (!string.IsNullOrWhiteSpace(dto.AuthorName))
+                books = books.Where(b => b.Author != null && EF.Functions.Like(b.Author.Name, $"%{dto.AuthorName}%"));
+
+            if (!string.IsNullOrWhiteSpace(dto.CategoryName))
+                books = books.Where(b => b.Category != null && EF.Functions.Like(b.Category.Name, $"%{dto.CategoryName}%"));
+
+            if (!string.IsNullOrWhiteSpace(dto.PublisherName))
+                books = books.Where(b => b.Publisher != null && EF.Functions.Like(b.Publisher.Name, $"%{dto.PublisherName}%"));
+
+
             if (dto.PublishDate.HasValue)
-                books = books.Where(b => b.PublishDate == dto.PublishDate.Value);
+            {
+                int year = dto.PublishDate.Value.Year;
+                books = books.Where(b => b.PublishDate.Year == year); //filter by year
+            }
+
 
 
             //Sorting
@@ -216,9 +221,6 @@ namespace Library.Services.Services
                 "author" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.Author != null ? b.Author.Name : "") : books.OrderBy(b => b.Author != null ? b.Author.Name : ""),
                 "category" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.Category != null ? b.Category.Name : "") : books.OrderBy(b => b.Category != null ? b.Category.Name : ""),
                 "publisher" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.Publisher != null ? b.Publisher.Name : "") : books.OrderBy(b => b.Publisher != null ? b.Publisher.Name : ""),
-                "isavailable" => dto.SortDir?.ToLower() == "desc"
-                ? books.OrderByDescending(b => b.InventoryRecords.Count(r => r.IsAvailable) > 0)
-                : books.OrderBy(b => b.InventoryRecords.Count(r => r.IsAvailable) > 0),
                 _ => books.OrderBy(b => b.Title)
             };
 

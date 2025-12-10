@@ -13,13 +13,5 @@ namespace Library.Shared.DTOs.Book
         public string AuthorName { get; set; } = null!;
         public string CategoryName { get; set; } = null!;
         public bool IsAvailable { get; set; }
-
-        public int? CreatedByUserId { get; set; }
-        public DateOnly CreatedDate { get; set; }
-        public int? LastModifiedByUserId { get; set; }
-        public DateOnly? LastModifiedDate { get; set; }
-        public bool IsArchived { get; set; }
-        public int? ArchivedByUserId { get; set; }
-        public DateOnly? ArchivedDate { get; set; }
     }
 }

@@ -38,13 +38,11 @@ namespace Library.Domain.Repositories
         public async Task AddAsync(T entity)
         {
             await _dbSet.AddAsync(entity);
-            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(T entity)
         {
             _dbSet.Update(entity);
-            await _context.SaveChangesAsync();
         }
 
         public async Task ArchiveAsync(T entity)
@@ -54,12 +52,16 @@ namespace Library.Domain.Repositories
             {
                 e.IsArchived = true;
                 _dbSet.Update(e);
-                await _context.SaveChangesAsync();
             }
             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
             {
                 throw new Exception($"Entity of type {typeof(T).Name} does not have an IsArchived property.");
             }
+        }
+
+        public async Task CommitAsync()
+        {
+            await _context.SaveChangesAsync();
         }
 
 

@@ -69,6 +69,7 @@ namespace Library.Services.Services
             outDto.LastModifiedByUserId = user.LastModifiedByUserId;
             outDto.LastModifiedDate = user.LastModifiedDate;
 
+            await _userRepo.CommitAsync();
             return outDto;
         }
 
@@ -91,6 +92,7 @@ namespace Library.Services.Services
             var result = user.Adapt<UserDto>();
             result.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
 
+            await _userRepo.CommitAsync();
             return result;
         }
 
@@ -153,6 +155,7 @@ namespace Library.Services.Services
             var dto = user.Adapt<UserDto>();
             dto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
 
+            await _userRepo.CommitAsync();
             return dto;
         }
 

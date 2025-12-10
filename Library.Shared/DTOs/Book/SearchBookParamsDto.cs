@@ -1,20 +1,26 @@
 ﻿
 using Library.Shared.Helpers;
+using System.ComponentModel.DataAnnotations;
 
 namespace Library.Shared.DTOs.Book
 {
     public class SearchBookParamsDto : SearchParamsDto
     {
+        [MaxLength(100, ErrorMessage = "Title cannot exceed 100 characters.")]
         public string? Title { get; set; }
         public DateOnly? PublishDate { get; set; }
-        public string? Version { get; set; }
 
-        [Positive]
-        public int? AuthorId { get; set; }
-        [Positive]
-        public int? CategoryId { get; set; }
-        [Positive]
-        public int? PublisherId { get; set; }
-        public bool? IsAvailable { get; set; }
+
+        [MaxLength(50, ErrorMessage = "Author name cannot exceed 50 characters.")]
+        public string? AuthorName { get; set; }
+
+
+        [MaxLength(50, ErrorMessage = "Category name cannot exceed 50 characters.")]
+        public string? CategoryName { get; set; }
+
+
+        [MaxLength(50, ErrorMessage = "Publisher name cannot exceed 50 characters.")]
+        public string? PublisherName { get; set; }
+
     }
 }

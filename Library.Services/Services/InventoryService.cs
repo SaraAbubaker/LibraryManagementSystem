@@ -63,6 +63,7 @@ namespace Library.Services.Services
             };
 
             await _inventoryRepo.AddAsync(record);
+            await _inventoryRepo.CommitAsync();
 
             return record;
         }

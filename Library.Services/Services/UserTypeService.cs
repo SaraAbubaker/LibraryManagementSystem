@@ -30,6 +30,7 @@ namespace Library.Services.Services
             userType.IsArchived = false;
 
             await _userTypeRepo.AddAsync(userType);
+            await _userTypeRepo.CommitAsync();
 
             return userType.Adapt<UserTypeDto>();
         }
@@ -75,6 +76,7 @@ namespace Library.Services.Services
             userType.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _userTypeRepo.UpdateAsync(userType);
+            await _userTypeRepo.CommitAsync();
 
             return userType.Adapt<UserTypeDto>();
         }
@@ -94,6 +96,7 @@ namespace Library.Services.Services
             userType.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _userTypeRepo.UpdateAsync(userType);
+            await _userTypeRepo.CommitAsync();
 
             return true;
         }

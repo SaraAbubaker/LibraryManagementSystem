@@ -93,6 +93,7 @@ namespace Library.Services.Services
             };
 
             await _borrowRepo.AddAsync(borrow);
+            await _borrowRepo.CommitAsync();
 
             return borrow;
         }
@@ -115,6 +116,7 @@ namespace Library.Services.Services
             record.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _borrowRepo.UpdateAsync(record);
+            await _borrowRepo.CommitAsync();
 
             return await _inventoryService.ReturnCopyAsync(record.InventoryRecordId, currentUserId);
         }

@@ -8,5 +8,6 @@ namespace Library.Domain.Repositories
         Task AddAsync(T entity);
         Task UpdateAsync(T entity);
         Task ArchiveAsync(T entity);
+        Task CommitAsync();
     }
 }

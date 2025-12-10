@@ -38,6 +38,7 @@ namespace Library.Services.Services
             category.IsArchived = false;
 
             await _categoryRepo.AddAsync(category);
+            await _categoryRepo.CommitAsync();
 
             return category.Adapt<CategoryDto>();
         }
@@ -64,6 +65,7 @@ namespace Library.Services.Services
             category.LastModifiedByUserId = userId;
 
             await _categoryRepo.UpdateAsync(category);
+            await _categoryRepo.CommitAsync();
 
             return category.Adapt<CategoryDto>();
         }
@@ -99,6 +101,7 @@ namespace Library.Services.Services
             category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
             await _categoryRepo.UpdateAsync(category);
+            await _categoryRepo.CommitAsync();
 
             return true;
         }
