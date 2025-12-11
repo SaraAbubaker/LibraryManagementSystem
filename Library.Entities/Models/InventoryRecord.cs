@@ -10,8 +10,8 @@ namespace Library.Entities.Models
         public bool IsAvailable { get; set; } = true;
 
         [Required]
-        [RegularExpression(@"^BC-\d{2}$",
-            ErrorMessage = "Copy code must follow format BC-01.")]
+        [RegularExpression(@"^[A-Z]{1,4}-\d{2}$",
+        ErrorMessage = "Copy code must follow format XXXX-01 or X-01 (1–4 uppercase letters, dash, two digits).")]
         public string CopyCode { get; set; } = null!;
 
         //Foreign Key

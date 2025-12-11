@@ -5,7 +5,7 @@ namespace Library.Services.Interfaces
 {
     public interface IBorrowService
     {
-        IQueryable<BorrowDto> GetBorrowDetailsQuery();
+        IQueryable<BorrowListDto> GetBorrowDetailsQuery();
         Task<bool> HasAvailableCopyAsync(int bookId);
         IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId);
         Task<BorrowRecord> BorrowBookAsync(RequestBorrowDto dto, int userId);

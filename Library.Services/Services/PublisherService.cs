@@ -20,7 +20,7 @@ namespace Library.Services.Services
 
 
         //CRUD
-        public async Task<PublisherDto> CreatePublisherAsync(CreatePublisherDto dto, int createdByUserId)
+        public async Task<PublisherListDto> CreatePublisherAsync(CreatePublisherDto dto, int createdByUserId)
         {
             Validate.ValidateModel(dto); 
             Validate.Positive(createdByUserId, nameof(createdByUserId));
@@ -31,21 +31,20 @@ namespace Library.Services.Services
             };
 
             await _publisherRepo.AddAsync(publisher, createdByUserId);
-
-            var publisherDto = publisher.Adapt<PublisherDto>();
-            publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
-
             await _publisherRepo.CommitAsync();
+
+            var publisherDto = publisher.Adapt<PublisherListDto>();
+            publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
 
             return publisherDto;
         }
 
-        public IQueryable<PublisherDto> GetAllPublishersQuery()
+        public IQueryable<PublisherListDto> GetAllPublishersQuery()
         {
             return _publisherRepo.GetAll()
                 .Include(p => p.InventoryRecords)
                 .AsNoTracking()
-                .Select(p => new PublisherDto
+                .Select(p => new PublisherListDto
                 {
                     Id = p.Id,
                     Name = p.Name,
@@ -53,7 +52,7 @@ namespace Library.Services.Services
                 });
         }
 
-        public IQueryable<PublisherDto> GetPublisherByIdQuery(int id)
+        public IQueryable<PublisherListDto> GetPublisherByIdQuery(int id)
         {
             Validate.Positive(id, nameof(id));
 
@@ -61,7 +60,7 @@ namespace Library.Services.Services
                 .Include(p => p.InventoryRecords)
                 .AsNoTracking()
                 .Where(p => p.Id == id)
-                .Select(p => new PublisherDto
+                .Select(p => new PublisherListDto
                 {
                     Id = p.Id,
                     Name = p.Name,
@@ -69,7 +68,7 @@ namespace Library.Services.Services
                 });
         }
         
-        public async Task<PublisherDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId)
+        public async Task<PublisherListDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId)
         {
             Validate.ValidateModel(dto);
             Validate.Positive(publisherId, nameof(publisherId));
@@ -84,11 +83,10 @@ namespace Library.Services.Services
 
             publisher.Name = dto.Name;
             await _publisherRepo.UpdateAsync(publisher, userId);
-
-            var publisherDto = publisher.Adapt<PublisherDto>();
-            publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
-
             await _publisherRepo.CommitAsync();
+
+            var publisherDto = publisher.Adapt<PublisherListDto>();
+            publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
 
             return publisherDto;
         }

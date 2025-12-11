@@ -21,25 +21,7 @@ namespace Library.Services.Services
             _bookRepo = bookRepo;
             _bookService = bookService;
         }
-
-
-        //Available = true + audit fields set
-        public async Task<bool> ReturnCopyAsync(int inventoryRecordId, int currentUserId)
-        {
-            Validate.Positive(inventoryRecordId, nameof(inventoryRecordId));
-            Validate.Positive(currentUserId, nameof(currentUserId));
-
-            var copy = Validate.Exists(
-                await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync(),
-                inventoryRecordId
-            );
-
-            copy.IsAvailable = true;
-            await _inventoryRepo.UpdateAsync(copy, currentUserId);
-
-            return true;
-        }
-
+        
         //Create, Remove, Read
         public async Task<InventoryRecord> CreateCopyAsync(int bookId, string copyCode, int createdByUserId)
         {
@@ -58,6 +40,42 @@ namespace Library.Services.Services
             await _inventoryRepo.CommitAsync();
 
             return record;
+        }
+
+        public IQueryable<InventoryRecord> ListCopiesForBookQuery(int bookId)
+        {
+            Validate.Positive(bookId, nameof(bookId));
+
+            return _inventoryRepo.GetAll()
+                .AsNoTracking()
+                .Where(r => r.BookId == bookId)
+                .OrderBy(r => r.Id);
+        }
+
+        public IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId)
+        {
+            Validate.Positive(bookId, nameof(bookId));
+
+            return _inventoryRepo.GetAll()
+                .AsNoTracking()
+                .Where(r => r.BookId == bookId && r.IsAvailable);
+        }
+
+        //Available = true + audit fields set
+        public async Task<bool> ReturnCopyAsync(int inventoryRecordId, int currentUserId)
+        {
+            Validate.Positive(inventoryRecordId, nameof(inventoryRecordId));
+            Validate.Positive(currentUserId, nameof(currentUserId));
+
+            var copy = Validate.Exists(
+                await _inventoryRepo.GetById(inventoryRecordId).FirstOrDefaultAsync(),
+                inventoryRecordId
+            );
+
+            copy.IsAvailable = true;
+            await _inventoryRepo.UpdateAsync(copy, currentUserId);
+
+            return true;
         }
 
         //Archive
@@ -82,25 +100,6 @@ namespace Library.Services.Services
             }
 
             return true;
-        }
-
-        public IQueryable<InventoryRecord> ListCopiesForBookQuery(int bookId)
-        {
-            Validate.Positive(bookId, nameof(bookId));
-
-            return _inventoryRepo.GetAll()
-                .AsNoTracking()
-                .Where(r => r.BookId == bookId)
-                .OrderBy(r => r.Id);
-        }
-
-        public IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId)
-        {
-            Validate.Positive(bookId, nameof(bookId));
-
-            return _inventoryRepo.GetAll()
-                .AsNoTracking()
-                .Where(r => r.BookId == bookId && r.IsAvailable);
         }
 
     }

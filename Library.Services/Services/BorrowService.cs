@@ -26,13 +26,13 @@ namespace Library.Services.Services
 
 
         //ListAll
-        public IQueryable<BorrowDto> GetBorrowDetailsQuery()
+        public IQueryable<BorrowListDto> GetBorrowDetailsQuery()
         {
             return _borrowRepo.GetAll()
                 .AsNoTracking()
                 .Include(b => b.InventoryRecord)
                 .Include(b => b.User)
-                .Select(b => new BorrowDto
+                .Select(b => new BorrowListDto
                 {
                     Id = b.Id,
                     BorrowDate = b.BorrowDate,

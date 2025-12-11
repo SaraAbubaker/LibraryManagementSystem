@@ -23,7 +23,7 @@ namespace Library.Services.Services
         }
 
 
-        public async Task<UserDto> RegisterUserAsync(RegisterUserDto dto)
+        public async Task<UserListDto> RegisterUserAsync(RegisterUserDto dto)
         {
             Validate.ValidateModel(dto);
 
@@ -51,17 +51,17 @@ namespace Library.Services.Services
             user.BorrowRecords = new List<BorrowRecord>();
 
             await _userRepo.AddAsync(user, userType.Id);
+            await _userRepo.CommitAsync();
 
-            var outDto = user.Adapt<UserDto>();
+            var outDto = user.Adapt<UserListDto>();
             outDto.UserTypeId = user.UserTypeId;
             outDto.UserRole = userType.Role;
             outDto.BorrowedBooksCount = 0;
-
-            await _userRepo.CommitAsync();
+                        
             return outDto;
         }
 
-        public async Task<UserDto> LoginUserAsync(LoginDto dto)
+        public async Task<UserListDto> LoginUserAsync(LoginDto dto)
         {
             Validate.ValidateModel(dto);
 
@@ -77,14 +77,13 @@ namespace Library.Services.Services
             if (user == null || user.Password != password)
                 throw new BadRequestException("Invalid username/email or password.");
 
-            var result = user.Adapt<UserDto>();
+            var result = user.Adapt<UserListDto>();
             result.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
 
-            await _userRepo.CommitAsync();
             return result;
         }
 
-        public IQueryable<UserDto> GetUserByIdQuery(int id)
+        public IQueryable<UserListDto> GetUserByIdQuery(int id)
         {
             Validate.Positive(id, nameof(id));
 
@@ -93,7 +92,7 @@ namespace Library.Services.Services
                 .Include(u => u.BorrowRecords)
                 .AsNoTracking()
                 .Where(u => u.Id == id)
-                .Select(u => new UserDto
+                .Select(u => new UserListDto
                 {
                     Id = u.Id,
                     Username = u.Username,
@@ -103,13 +102,13 @@ namespace Library.Services.Services
                 });
         }
 
-        public IQueryable<UserDto> GetAllUsersQuery()
+        public IQueryable<UserListDto> GetAllUsersQuery()
         {
             return _userRepo.GetAll()
                 .Include(u => u.UserType)
                 .Include(u => u.BorrowRecords)
                 .AsNoTracking()
-                .Select(u => new UserDto
+                .Select(u => new UserListDto
                 {
                     Id = u.Id,
                     Username = u.Username,
@@ -119,7 +118,7 @@ namespace Library.Services.Services
                 });
         }
 
-        public async Task<UserDto> ArchiveUserAsync(int id, int performedByUserId)
+        public async Task<UserListDto> ArchiveUserAsync(int id, int performedByUserId)
         {
             Validate.Positive(id, nameof(id));
             Validate.Positive(performedByUserId, nameof(performedByUserId));
@@ -133,11 +132,11 @@ namespace Library.Services.Services
                 throw new InvalidOperationException("User has active borrowed books. Return them before deleting.");
 
             await _userRepo.ArchiveAsync(user, performedByUserId);
+            await _userRepo.CommitAsync();
 
-            var dto = user.Adapt<UserDto>();
+            var dto = user.Adapt<UserListDto>();
             dto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;
 
-            await _userRepo.CommitAsync();
             return dto;
         }
 

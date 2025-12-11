@@ -19,7 +19,7 @@ namespace Library.Services.Services
         }
 
         //CRUD
-        public async Task<UserTypeDto> CreateUserTypeAsync(CreateUserTypeDto dto, int createdByUserId)
+        public async Task<UserTypeListDto> CreateUserTypeAsync(CreateUserTypeDto dto, int createdByUserId)
         {
             Validate.ValidateModel(dto);
             Validate.Positive(createdByUserId, nameof(createdByUserId));
@@ -29,35 +29,35 @@ namespace Library.Services.Services
             await _userTypeRepo.AddAsync(userType, createdByUserId);
             await _userTypeRepo.CommitAsync();
 
-            return userType.Adapt<UserTypeDto>();
+            return userType.Adapt<UserTypeListDto>();
         }
 
-        public IQueryable<UserTypeDto> GetAllUserTypesQuery()
+        public IQueryable<UserTypeListDto> GetAllUserTypesQuery()
         {
             return _userTypeRepo.GetAll()
                 .AsNoTracking()
-                .Select(ut => new UserTypeDto
+                .Select(ut => new UserTypeListDto
                 {
                     Id = ut.Id,
                     Role = ut.Role
                 });
         }
 
-        public IQueryable<UserTypeDto> GetUserTypeByIdQuery(int id)
+        public IQueryable<UserTypeListDto> GetUserTypeByIdQuery(int id)
         {
             Validate.Positive(id, nameof(id));
 
             return _userTypeRepo.GetAll()
                 .AsNoTracking()
                 .Where(ut => ut.Id == id)
-                .Select(ut => new UserTypeDto
+                .Select(ut => new UserTypeListDto
                 {
                     Id = ut.Id,
                     Role = ut.Role
                 });
         }
 
-        public async Task<UserTypeDto> UpdateUserTypeAsync(UpdateUserTypeDto dto, int userId, int userTypeId)
+        public async Task<UserTypeListDto> UpdateUserTypeAsync(UpdateUserTypeDto dto, int userId, int userTypeId)
         {
             Validate.ValidateModel(dto);
             Validate.Positive(userTypeId, nameof(userTypeId));
@@ -72,7 +72,7 @@ namespace Library.Services.Services
             await _userTypeRepo.UpdateAsync(userType, userId);
             await _userTypeRepo.CommitAsync();
 
-            return userType.Adapt<UserTypeDto>();
+            return userType.Adapt<UserTypeListDto>();
         }
 
         public async Task<bool> ArchiveUserTypeAsync(int id, int archivedByUserId)

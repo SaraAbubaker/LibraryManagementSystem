@@ -29,6 +29,24 @@ namespace Library.API.Controllers
             }
         }
 
+        [HttpPost("return/{inventoryRecordId}")]
+        public async Task<IActionResult> ReturnCopy(int inventoryRecordId, [FromQuery] int userId)
+        {
+            try
+            {
+                var success = await _service.ReturnCopyAsync(inventoryRecordId, userId);
+
+                if (!success)
+                    return NotFound(ApiResponseHelper.Failure<object>("Inventory record not found."));
+
+                return Ok(ApiResponseHelper.Success(new { Message = "Copy returned successfully." }));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponseHelper.Failure<object>(ex.Message));
+            }
+        }
+
         [HttpGet("book/{bookId}/query")]
         public IActionResult ListCopiesQuery(int bookId)
         {
@@ -50,24 +68,6 @@ namespace Library.API.Controllers
             {
                 var query = _service.GetAvailableCopiesQuery(bookId).ToList();
                 return Ok(ApiResponseHelper.Success(query));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponseHelper.Failure<object>(ex.Message));
-            }
-        }
-
-        [HttpPost("return/{inventoryRecordId}")]
-        public async Task<IActionResult> ReturnCopy(int inventoryRecordId, [FromQuery] int userId)
-        {
-            try
-            {
-                var success = await _service.ReturnCopyAsync(inventoryRecordId, userId);
-
-                if (!success)
-                    return NotFound(ApiResponseHelper.Failure<object>("Inventory record not found."));
-
-                return Ok(ApiResponseHelper.Success(new { Message = "Copy returned successfully." }));
             }
             catch (Exception ex)
             {

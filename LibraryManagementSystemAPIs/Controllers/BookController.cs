@@ -84,26 +84,6 @@ namespace Library.API.Controllers
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBook(int id, UpdateBookDto dto, [FromQuery] int userId)
-        {
-            try
-            {
-                if (id != dto.Id)
-                    return BadRequest(ApiResponseHelper.Failure<UpdateBookDto>("ID mismatch."));
-
-                var success = await _service.UpdateBookAsync(dto, userId);
-                if (!success)
-                    return NotFound(ApiResponseHelper.Failure<UpdateBookDto>("Book not found."));
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponseHelper.Failure<UpdateBookDto>(ex.Message));
-            }
-        }
-
         [HttpGet("query/search")]
         public async Task<IActionResult> SearchBooksQuery(
             [FromQuery] SearchBookParamsDto filters,
@@ -127,6 +107,26 @@ namespace Library.API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ApiResponseHelper.Failure<object>(ex.Message));
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateBook(int id, UpdateBookDto dto, [FromQuery] int userId)
+        {
+            try
+            {
+                if (id != dto.Id)
+                    return BadRequest(ApiResponseHelper.Failure<UpdateBookDto>("ID mismatch."));
+
+                var success = await _service.UpdateBookAsync(dto, userId);
+                if (!success)
+                    return NotFound(ApiResponseHelper.Failure<UpdateBookDto>("Book not found."));
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponseHelper.Failure<UpdateBookDto>(ex.Message));
             }
         }
 

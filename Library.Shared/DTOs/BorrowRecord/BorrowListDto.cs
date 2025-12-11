@@ -1,7 +1,7 @@
 ﻿
 namespace Library.Shared.DTOs.BorrowRecord
 {
-    public class BorrowDto
+    public class BorrowListDto
     {
         public int Id { get; set; }
 

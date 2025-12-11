@@ -16,20 +16,6 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet("query")]
-        public IActionResult GetBorrowDetailsQuery()
-        {
-            try
-            {
-                var query = _service.GetBorrowDetailsQuery().ToList();
-                return Ok(ApiResponseHelper.Success(query));
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ApiResponseHelper.Failure<List<BorrowDto>>(ex.Message));
-            }
-        }
-
         [HttpPost("borrow")]
         public async Task<IActionResult> BorrowBook(RequestBorrowDto dto, [FromQuery] int userId)
         {
@@ -61,6 +47,20 @@ namespace Library.API.Controllers
             }
         }
 
+        [HttpGet("query")]
+        public IActionResult GetBorrowDetailsQuery()
+        {
+            try
+            {
+                var query = _service.GetBorrowDetailsQuery().ToList();
+                return Ok(ApiResponseHelper.Success(query));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponseHelper.Failure<List<BorrowListDto>>(ex.Message));
+            }
+        }
+
         [HttpGet("query/overdue")]
         public IActionResult GetOverdueRecordsQuery()
         {
@@ -71,7 +71,7 @@ namespace Library.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<List<BorrowDto>>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<List<BorrowListDto>>(ex.Message));
             }
         }
     }

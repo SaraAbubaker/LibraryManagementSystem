@@ -24,7 +24,7 @@ namespace Library.Services.Services
 
 
         //CRUD
-        public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto, int userId)
+        public async Task<CategoryListDto> CreateCategoryAsync(CreateCategoryDto dto, int userId)
         {
             Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
@@ -34,17 +34,26 @@ namespace Library.Services.Services
             await _categoryRepo.AddAsync(category, userId);
             await _categoryRepo.CommitAsync();
 
-            return category.Adapt<CategoryDto>();
+            return category.Adapt<CategoryListDto>();
         }
 
-        public IQueryable<CategoryDto> GetAllCategoriesQuery()
+        public IQueryable<CategoryListDto> GetAllCategoriesQuery()
         {
             return _categoryRepo.GetAll()
                 .AsNoTracking()
-                .Select(c => c.Adapt<CategoryDto>());
+                .Select(c => c.Adapt<CategoryListDto>());
         }
 
-        public async Task<CategoryDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId)
+        public IQueryable<CategoryListDto> GetCategoryByIdQuery(int id)
+        {
+            Validate.Positive(id, nameof(id));
+
+            return _categoryRepo.GetById(id)
+                .AsNoTracking()
+                .Select(c => c.Adapt<CategoryListDto>());
+        }
+
+        public async Task<CategoryListDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId)
         {
             Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
@@ -58,7 +67,7 @@ namespace Library.Services.Services
             await _categoryRepo.UpdateAsync(category, userId);
             await _categoryRepo.CommitAsync();
 
-            return category.Adapt<CategoryDto>();
+            return category.Adapt<CategoryListDto>();
         }
 
         //Archives category & Moves books out of it

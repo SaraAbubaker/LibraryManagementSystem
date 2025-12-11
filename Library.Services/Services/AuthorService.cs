@@ -46,12 +46,12 @@ namespace Library.Services.Services
             };
 
             await _authorRepo.AddAsync(author, userId);
+            await _authorRepo.CommitAsync();
 
             var result = author.Adapt<AuthorListDto>();
 
             result.BookCount = await _bookRepo.GetAll().CountAsync(b => b.AuthorId == author.Id);
 
-            await _authorRepo.CommitAsync();
             return result;
         }
 

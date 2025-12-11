@@ -5,10 +5,10 @@ namespace Library.Services.Interfaces
 {
     public interface IUserService
     {
-        Task<UserDto> RegisterUserAsync(RegisterUserDto dto);
-        Task<UserDto> LoginUserAsync(LoginDto dto);
-        IQueryable<UserDto> GetUserByIdQuery(int id);
-        IQueryable<UserDto> GetAllUsersQuery();
-        Task<UserDto> ArchiveUserAsync(int id, int performedByUserId);
+        Task<UserListDto> RegisterUserAsync(RegisterUserDto dto);
+        Task<UserListDto> LoginUserAsync(LoginDto dto);
+        IQueryable<UserListDto> GetUserByIdQuery(int id);
+        IQueryable<UserListDto> GetAllUsersQuery();
+        Task<UserListDto> ArchiveUserAsync(int id, int performedByUserId);
     }
 }

@@ -41,7 +41,25 @@ namespace Library.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<List<CategoryDto>>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<List<CategoryListDto>>(ex.Message));
+            }
+        }
+
+        [HttpGet("query/{id}")]
+        public IActionResult GetCategoryByIdQuery(int id)
+        {
+            try
+            {
+                var category = _service.GetCategoryByIdQuery(id).FirstOrDefault();
+
+                if (category == null)
+                    return NotFound(ApiResponseHelper.Failure<CategoryListDto>($"Category with id {id} was not found."));
+
+                return Ok(ApiResponseHelper.Success(category));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponseHelper.Failure<CategoryListDto>(ex.Message));
             }
         }
 
@@ -71,17 +89,17 @@ namespace Library.API.Controllers
                 var success = await _service.ArchiveCategoryAsync(id, userId);
 
                 if (!success)
-                    return NotFound(ApiResponseHelper.Failure<CategoryDto>("Category not found."));
+                    return NotFound(ApiResponseHelper.Failure<CategoryListDto>("Category not found."));
 
                 return Ok(ApiResponseHelper.Success(new { Message = "Category archived successfully." }));
             }
             catch (ConflictException ex)
             {
-                return Conflict(ApiResponseHelper.Failure<CategoryDto>(ex.Message));
+                return Conflict(ApiResponseHelper.Failure<CategoryListDto>(ex.Message));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<CategoryDto>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<CategoryListDto>(ex.Message));
             }
         }
     }

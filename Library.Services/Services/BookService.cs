@@ -8,8 +8,6 @@ using Library.Shared.Helpers;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using System.Linq.Expressions;
-using static Library.Shared.DTOs.SearchParamsDto;
 
 namespace Library.Services.Services
 {
@@ -31,7 +29,25 @@ namespace Library.Services.Services
             Validate.ValidateModel(dto);
             Validate.Positive(currentUserId, nameof(currentUserId));
 
-            var book = dto.Adapt<Book>();  //Mapping using Mapster
+            var book = dto.Adapt<Book>();
+
+            //Generate first copy code from title (e.g., "Harry Potter" -> "HP-01")
+            string prefix = CopyCodeGeneratorHelper.GenerateBookPrefix(book.Title);
+            string copyCode = $"{prefix}-{1:00}";
+
+            var defaultCopy = new InventoryRecord
+            {
+                CopyCode = copyCode,
+                IsAvailable = true,
+                PublisherId = book.PublisherId > 0 ? book.PublisherId : 0,
+                CreatedByUserId = currentUserId,
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                LastModifiedByUserId = currentUserId,
+                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now),
+                IsArchived = false
+            };
+
+            book.InventoryRecords.Add(defaultCopy);
 
             await _bookRepo.AddAsync(book, currentUserId);
             await _bookRepo.CommitAsync();

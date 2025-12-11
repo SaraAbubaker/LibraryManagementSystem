@@ -54,7 +54,7 @@ namespace Library.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<List<UserDto>>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<List<UserListDto>>(ex.Message));
             }
         }
 
@@ -66,13 +66,13 @@ namespace Library.API.Controllers
                 var query = _service.GetUserByIdQuery(id);
                 var user = query.FirstOrDefault();
                 if (user == null)
-                    return NotFound(ApiResponseHelper.Failure<UserDto>("User not found"));
+                    return NotFound(ApiResponseHelper.Failure<UserListDto>("User not found"));
 
                 return Ok(ApiResponseHelper.Success(user));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<UserDto>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<UserListDto>(ex.Message));
             }
         }
 

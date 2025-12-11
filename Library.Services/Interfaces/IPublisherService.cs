@@ -5,10 +5,10 @@ namespace Library.Services.Interfaces
 {
     public interface IPublisherService
     {
-        Task<PublisherDto> CreatePublisherAsync(CreatePublisherDto dto, int createdByUserId);
-        IQueryable<PublisherDto> GetAllPublishersQuery();
-        IQueryable<PublisherDto> GetPublisherByIdQuery(int id);
-        Task<PublisherDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId);
+        Task<PublisherListDto> CreatePublisherAsync(CreatePublisherDto dto, int createdByUserId);
+        IQueryable<PublisherListDto> GetAllPublishersQuery();
+        IQueryable<PublisherListDto> GetPublisherByIdQuery(int id);
+        Task<PublisherListDto> UpdatePublisherAsync(UpdatePublisherDto dto, int userId, int publisherId);
         Task<bool> ArchivePublisherAsync(int id, int archivedByUserId);
     }
 }

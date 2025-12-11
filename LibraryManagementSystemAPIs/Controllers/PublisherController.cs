@@ -41,7 +41,7 @@ namespace Library.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<List<PublisherDto>>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<List<PublisherListDto>>(ex.Message));
             }
         }
 
@@ -53,13 +53,13 @@ namespace Library.API.Controllers
                 var query = _service.GetPublisherByIdQuery(id);
                 var publisher = query.FirstOrDefault();
                 if (publisher == null)
-                    return NotFound(ApiResponseHelper.Failure<PublisherDto>("Publisher not found"));
+                    return NotFound(ApiResponseHelper.Failure<PublisherListDto>("Publisher not found"));
 
                 return Ok(ApiResponseHelper.Success(publisher));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<PublisherDto>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<PublisherListDto>(ex.Message));
             }
         }
 

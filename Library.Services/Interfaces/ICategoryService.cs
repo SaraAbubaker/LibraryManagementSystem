@@ -1,13 +1,15 @@
 ﻿
 using Library.Shared.DTOs.Category;
+using Library.Shared.Helpers;
 
 namespace Library.Services.Interfaces
 {
     public interface ICategoryService
     {
-        Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto, int userId);
-        IQueryable<CategoryDto> GetAllCategoriesQuery();
-        Task<CategoryDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId);
+        Task<CategoryListDto> CreateCategoryAsync(CreateCategoryDto dto, int userId);
+        IQueryable<CategoryListDto> GetAllCategoriesQuery();
+        IQueryable<CategoryListDto> GetCategoryByIdQuery(int id);
+        Task<CategoryListDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId);
         Task<bool> ArchiveCategoryAsync(int id, int performedByUserId);
     }
 }

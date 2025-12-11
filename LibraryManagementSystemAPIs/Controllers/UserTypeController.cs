@@ -40,7 +40,7 @@ namespace Library.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<List<UserTypeDto>>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<List<UserTypeListDto>>(ex.Message));
             }
         }
 
@@ -52,13 +52,13 @@ namespace Library.API.Controllers
                 var query = _service.GetUserTypeByIdQuery(id);
                 var userType = query.FirstOrDefault();
                 if (userType == null)
-                    return NotFound(ApiResponseHelper.Failure<UserTypeDto>("User type not found"));
+                    return NotFound(ApiResponseHelper.Failure<UserTypeListDto>("User type not found"));
 
                 return Ok(ApiResponseHelper.Success(userType));
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponseHelper.Failure<UserTypeDto>(ex.Message));
+                return BadRequest(ApiResponseHelper.Failure<UserTypeListDto>(ex.Message));
             }
         }
 

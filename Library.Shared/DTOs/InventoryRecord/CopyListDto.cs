@@ -1,7 +1,7 @@
 ﻿
 namespace Library.Shared.DTOs.InventoryRecord
 {
-    public class CopyDto
+    public class CopyListDto
     {
         public int Id { get; set; }
 
@@ -10,11 +10,5 @@ namespace Library.Shared.DTOs.InventoryRecord
 
         public int BookId { get; set; }
         public string? BookTitle { get; set; }
-
-        
-        public int? CreatedByUserId { get; set; }
-        public DateOnly? CreatedDate { get; set; }
-        public int? LastModifiedByUserId { get; set; }
-        public DateOnly? LastModifiedDate { get; set; }
     }
 }

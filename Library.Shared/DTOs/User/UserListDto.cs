@@ -1,7 +1,7 @@
 ﻿
 namespace Library.Shared.DTOs.User
 {
-    public class UserDto
+    public class UserListDto
     {
         public int Id { get; set; }
 
@@ -11,11 +11,5 @@ namespace Library.Shared.DTOs.User
         public int UserTypeId { get; set; }
         public string UserRole { get; set; } = null!;
         public int BorrowedBooksCount { get; set; }
-
-        
-        public int? CreatedByUserId { get; set; }
-        public DateOnly? CreatedDate { get; set; }
-        public int? LastModifiedByUserId { get; set; }
-        public DateOnly? LastModifiedDate { get; set; }
     }
 }
