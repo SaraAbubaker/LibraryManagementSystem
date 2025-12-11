@@ -35,10 +35,7 @@ namespace Library.Services.Services
             );
 
             copy.IsAvailable = true;
-            copy.LastModifiedByUserId = currentUserId;
-            copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Today);
-
-            await _inventoryRepo.UpdateAsync(copy);
+            await _inventoryRepo.UpdateAsync(copy, currentUserId);
 
             return true;
         }
@@ -54,22 +51,17 @@ namespace Library.Services.Services
             {
                 BookId = bookId,
                 CopyCode = copyCode,
-                IsAvailable = true,
-                IsArchived = false,
-                CreatedByUserId = createdByUserId,
-                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
-                LastModifiedByUserId = createdByUserId,
-                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now)
+                IsAvailable = true
             };
 
-            await _inventoryRepo.AddAsync(record);
+            await _inventoryRepo.AddAsync(record, createdByUserId);
             await _inventoryRepo.CommitAsync();
 
             return record;
         }
 
         //Archive
-        public async Task<bool> RemoveCopyAsync(int inventoryRecordId, int performedByUserId)
+        public async Task<bool> ArchiveCopyAsync(int inventoryRecordId, int performedByUserId)
         {
             Validate.Positive(inventoryRecordId, nameof(inventoryRecordId));
             Validate.Positive(performedByUserId, nameof(performedByUserId));
@@ -79,13 +71,7 @@ namespace Library.Services.Services
                 inventoryRecordId
             );
 
-            copy.IsArchived = true;
-            copy.ArchivedByUserId = performedByUserId;
-            copy.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
-            copy.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-            copy.LastModifiedByUserId = performedByUserId;
-
-            await _inventoryRepo.UpdateAsync(copy);
+            await _inventoryRepo.ArchiveAsync(copy, performedByUserId);
 
             //Archive the book if no copies remain
             var anyLeft = _inventoryRepo.GetAll()

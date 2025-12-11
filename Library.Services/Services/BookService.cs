@@ -1,11 +1,15 @@
 ﻿using Library.Domain.Repositories;
-using Library.Shared.Helpers;
-using Library.Shared.DTOs.Book;
-using Library.Shared.Exceptions;
 using Library.Entities.Models;
 using Library.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using Library.Shared.DTOs;
+using Library.Shared.DTOs.Book;
+using Library.Shared.Exceptions;
+using Library.Shared.Helpers;
 using Mapster;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.Linq.Expressions;
+using static Library.Shared.DTOs.SearchParamsDto;
 
 namespace Library.Services.Services
 {
@@ -14,7 +18,7 @@ namespace Library.Services.Services
         private readonly IGenericRepository<Book> _bookRepo;
         private readonly IGenericRepository<InventoryRecord> _inventoryRepo;
 
-        public BookService(IGenericRepository<Book> bookRepo, 
+        public BookService(IGenericRepository<Book> bookRepo,
             IGenericRepository<InventoryRecord> inventoryRepo)
         {
             _bookRepo = bookRepo;
@@ -29,13 +33,7 @@ namespace Library.Services.Services
 
             var book = dto.Adapt<Book>();  //Mapping using Mapster
 
-            book.CreatedByUserId = currentUserId;
-            book.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
-            book.LastModifiedByUserId = currentUserId;
-            book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-            book.IsArchived = false;
-
-            await _bookRepo.AddAsync(book);
+            await _bookRepo.AddAsync(book, currentUserId);
             await _bookRepo.CommitAsync();
 
             return book;
@@ -130,10 +128,7 @@ namespace Library.Services.Services
             if (dto.AuthorId.HasValue) book.AuthorId = dto.AuthorId.Value;
             if (dto.CategoryId.HasValue) book.CategoryId = dto.CategoryId.Value;
 
-            book.LastModifiedByUserId = currentUserId;
-            book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _bookRepo.UpdateAsync(book);
+            await _bookRepo.UpdateAsync(book, currentUserId);
             await _bookRepo.CommitAsync();
 
             return true;
@@ -150,93 +145,125 @@ namespace Library.Services.Services
                 bookId
             );
 
-            book.IsArchived = true;
-            book.ArchivedByUserId = performedByUserId;
-            book.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
-            book.LastModifiedByUserId = performedByUserId;
-            book.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _bookRepo.UpdateAsync(book);
+            await _bookRepo.ArchiveAsync(book, performedByUserId);
             await _bookRepo.CommitAsync();
             return true;
         }
 
         //Search method (filter, sort, pagination)
-        public IQueryable<BookListDto> SearchBooksQuery(SearchBookParamsDto dto)
+        public async Task<PagedResult<BookListDto>> SearchBooksQuery(SearchBookParamsDto dto, SearchParamsDto searchDto)
         {
             Validate.ValidateModel(dto);
+            Validate.ValidateModel(searchDto);
 
-            dto.PageSize = 3;
-            int skip = (Math.Max(1, dto.Page) - 1) * dto.PageSize;
+            int page = Math.Max(1, searchDto.Page);
+            int pageSize = Math.Max(1, searchDto.PageSize);
+            int skip = (page - 1) * pageSize;
 
             var books = _bookRepo.GetAll()
-                .Include(b => b.Author) 
-                .Include(b => b.Category) 
-                .Include(b => b.Publisher) 
+                .Include(b => b.Author)
+                .Include(b => b.Category)
+                .Include(b => b.Publisher)
                 .Include(b => b.InventoryRecords)
                 .AsNoTracking();
 
-            //Search
-            if (!string.IsNullOrWhiteSpace(dto.SearchParam))
+            //Filter
+            if (!string.IsNullOrWhiteSpace(dto.Title))
+                books = books.Where(b => b.Title != null && b.Title.Contains(dto.Title.Trim()));
+
+            if (!string.IsNullOrWhiteSpace(dto.AuthorName))
+                books = books.Where(b => b.Author != null && b.Author.Name.Contains(dto.AuthorName.Trim()));
+
+            if (!string.IsNullOrWhiteSpace(dto.CategoryName))
+                books = books.Where(b => b.Category != null && b.Category.Name.Contains(dto.CategoryName.Trim()));
+
+            if (!string.IsNullOrWhiteSpace(dto.PublisherName))
+                books = books.Where(b => b.Publisher != null && b.Publisher.Name.Contains(dto.PublisherName.Trim()));
+
+            if (!string.IsNullOrWhiteSpace(dto.PublishYearOrDate))
             {
-                var search = dto.SearchParam.Trim();
+                var value = dto.PublishYearOrDate.Trim();
+
+                if (int.TryParse(value, out int year))
+                    books = books.Where(b => b.PublishDate.Year == year);
+                else if (DateOnly.TryParse(value, out DateOnly date))
+                    books = books.Where(b => b.PublishDate == date);
+                else
+                    throw new ValidationException("PublishYearOrDate must be a valid year or full date (YYYY-MM-DD).");
+            }
+
+            //Search
+            if (!string.IsNullOrWhiteSpace(searchDto.SearchParam))
+            {
+                var search = searchDto.SearchParam.Trim();
+                bool isYear = int.TryParse(search, out int searchYear);
+                bool isDate = DateOnly.TryParse(search, out DateOnly searchDate);
+
                 books = books.Where(b =>
-                    EF.Functions.Like(b.Title, $"%{search}%") ||
-                    (b.Author != null && EF.Functions.Like(b.Author.Name, $"%{search}%")) ||
-                    (b.Category != null && EF.Functions.Like(b.Category.Name, $"%{search}%")) ||
-                    (b.Publisher != null && EF.Functions.Like(b.Publisher.Name, $"%{search}%"))
+                    (b.Title != null && b.Title.Contains(search)) ||
+                    (b.Author != null && b.Author.Name.Contains(search)) ||
+                    (b.Category != null && b.Category.Name.Contains(search)) ||
+                    (b.Publisher != null && b.Publisher.Name.Contains(search)) ||
+                    (isYear && b.PublishDate.Year == searchYear) ||
+                    (isDate && b.PublishDate == searchDate)
                 );
             }
 
-            //Filter
-            if (!string.IsNullOrWhiteSpace(dto.Title))
-            {
-                var searchTitle = dto.Title.Trim();
-                books = books.Where(b => b.Title != null && EF.Functions.Like(b.Title, $"%{searchTitle}%"));
-            }
-
-            if (!string.IsNullOrWhiteSpace(dto.AuthorName))
-                books = books.Where(b => b.Author != null && EF.Functions.Like(b.Author.Name, $"%{dto.AuthorName}%"));
-
-            if (!string.IsNullOrWhiteSpace(dto.CategoryName))
-                books = books.Where(b => b.Category != null && EF.Functions.Like(b.Category.Name, $"%{dto.CategoryName}%"));
-
-            if (!string.IsNullOrWhiteSpace(dto.PublisherName))
-                books = books.Where(b => b.Publisher != null && EF.Functions.Like(b.Publisher.Name, $"%{dto.PublisherName}%"));
-
-
-            if (dto.PublishDate.HasValue)
-            {
-                int year = dto.PublishDate.Value.Year;
-                books = books.Where(b => b.PublishDate.Year == year); //filter by year
-            }
-
-
-
             //Sorting
-            books = (dto.SortBy?.Trim().ToLower()) switch
+            books = searchDto.SortBy switch
             {
-                "title" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.Title) : books.OrderBy(b => b.Title),
-                "publishdate" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.PublishDate) : books.OrderBy(b => b.PublishDate),
-                "author" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.Author != null ? b.Author.Name : "") : books.OrderBy(b => b.Author != null ? b.Author.Name : ""),
-                "category" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.Category != null ? b.Category.Name : "") : books.OrderBy(b => b.Category != null ? b.Category.Name : ""),
-                "publisher" => dto.SortDir?.ToLower() == "desc" ? books.OrderByDescending(b => b.Publisher != null ? b.Publisher.Name : "") : books.OrderBy(b => b.Publisher != null ? b.Publisher.Name : ""),
-                _ => books.OrderBy(b => b.Title)
+                SearchParamsDto.BookSortBy.Id => searchDto.SortDir == SearchParamsDto.SortDirection.Desc
+                    ? books.OrderByDescending(b => b.Id)
+                    : books.OrderBy(b => b.Id),
+
+                SearchParamsDto.BookSortBy.Title => searchDto.SortDir == SearchParamsDto.SortDirection.Desc
+                    ? books.OrderByDescending(b => b.Title ?? "")
+                    : books.OrderBy(b => b.Title ?? ""),
+
+                SearchParamsDto.BookSortBy.PublishDate => searchDto.SortDir == SearchParamsDto.SortDirection.Desc
+                    ? books.OrderByDescending(b => b.PublishDate)
+                    : books.OrderBy(b => b.PublishDate),
+
+                SearchParamsDto.BookSortBy.Author => searchDto.SortDir == SearchParamsDto.SortDirection.Desc
+                    ? books.OrderByDescending(b => b.Author != null ? b.Author.Name : "")
+                    : books.OrderBy(b => b.Author != null ? b.Author.Name : ""),
+
+                SearchParamsDto.BookSortBy.Category => searchDto.SortDir == SearchParamsDto.SortDirection.Desc
+                    ? books.OrderByDescending(b => b.Category != null ? b.Category.Name : "")
+                    : books.OrderBy(b => b.Category != null ? b.Category.Name : ""),
+
+                SearchParamsDto.BookSortBy.Publisher => searchDto.SortDir == SearchParamsDto.SortDirection.Desc
+                    ? books.OrderByDescending(b => b.Publisher != null ? b.Publisher.Name : "")
+                    : books.OrderBy(b => b.Publisher != null ? b.Publisher.Name : ""),
+
+                _ => books.OrderBy(b => b.Id)
             };
 
-            //Pagination + mapping
-            var paged = books.Skip(skip).Take(Math.Max(1, dto.PageSize));
+            int totalCount = await books.CountAsync();
 
-            return paged.Select(b => new BookListDto
+            //Pagination + mapping
+            var pagedItems = await books
+                .Skip(skip)
+                .Take(pageSize)
+                .Select(b => new BookListDto
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    PublishDate = b.PublishDate,
+                    AuthorName = b.Author != null ? b.Author.Name : "Unknown",
+                    CategoryName = b.Category != null ? b.Category.Name : "Unknown",
+                    PublisherName = b.Publisher != null ? b.Publisher.Name : "Unknown",
+                    IsAvailable = b.InventoryRecords.Any(r => r.IsAvailable)
+                })
+                .ToListAsync();
+
+            return new PagedResult<BookListDto>
             {
-                Id = b.Id,
-                Title = b.Title,
-                PublishDate = b.PublishDate,
-                AuthorName = b.Author != null ? b.Author.Name : "Unknown",
-                CategoryName = b.Category != null ? b.Category.Name : "Unknown",
-                PublisherName = b.Publisher != null ? b.Publisher.Name : "Unknown",
-                IsAvailable = b.InventoryRecords.Any(r => r.IsAvailable)
-            });
+                Items = pagedItems,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

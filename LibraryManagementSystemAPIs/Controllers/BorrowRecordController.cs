@@ -1,5 +1,6 @@
-﻿using Library.Shared.DTOs.BorrowRecord;
-using Library.Services.Interfaces;
+﻿using Library.Services.Interfaces;
+using Library.Shared.DTOs.ApiResponses;
+using Library.Shared.DTOs.BorrowRecord;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.API.Controllers
@@ -20,12 +21,12 @@ namespace Library.API.Controllers
         {
             try
             {
-                var query = _service.GetBorrowDetailsQuery();
-                return Ok(query);
+                var query = _service.GetBorrowDetailsQuery().ToList();
+                return Ok(ApiResponseHelper.Success(query));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<List<BorrowDto>>(ex.Message));
             }
         }
 
@@ -35,11 +36,11 @@ namespace Library.API.Controllers
             try
             {
                 var borrow = await _service.BorrowBookAsync(dto, userId);
-                return Ok(borrow);
+                return Ok(ApiResponseHelper.Success(borrow));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<RequestBorrowDto>(ex.Message));
             }
         }
 
@@ -49,12 +50,14 @@ namespace Library.API.Controllers
             try
             {
                 var success = await _service.ReturnBookAsync(borrowRecordId, userId);
-                if (!success) return NotFound();
-                return Ok(new { Message = "Book returned successfully." });
+                if (!success)
+                    return NotFound(ApiResponseHelper.Failure<object>("Borrow record not found"));
+
+                return Ok(ApiResponseHelper.Success(new { Message = "Book returned successfully." }));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<object>(ex.Message));
             }
         }
 
@@ -63,12 +66,12 @@ namespace Library.API.Controllers
         {
             try
             {
-                var query = _service.GetOverdueRecordsQuery();
-                return Ok(query);
+                var query = _service.GetOverdueRecordsQuery().ToList();
+                return Ok(ApiResponseHelper.Success(query));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<List<BorrowDto>>(ex.Message));
             }
         }
     }

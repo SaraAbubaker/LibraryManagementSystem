@@ -1,4 +1,5 @@
 ﻿using Library.Services.Interfaces;
+using Library.Shared.DTOs.ApiResponses;
 using Library.Shared.DTOs.Category;
 using Library.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
@@ -16,31 +17,31 @@ namespace Library.API.Controllers
             _service = service;
         }
 
-        [HttpGet("query")]
-        public IActionResult GetAllCategoriesQuery()
-        {
-            try
-            {
-                var query = _service.GetAllCategoriesQuery();
-                return Ok(query);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
         [HttpPost]
         public async Task<IActionResult> CreateCategory( CreateCategoryDto dto, [FromQuery] int userId)
         {
             try
             {
                 var created = await _service.CreateCategoryAsync(dto, userId);
-                return Ok(created);
+                return Ok(ApiResponseHelper.Success(created));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<CreateCategoryDto>(ex.Message));
+            }
+        }
+
+        [HttpGet("query")]
+        public IActionResult GetAllCategoriesQuery()
+        {
+            try
+            {
+                var query = _service.GetAllCategoriesQuery().ToList();
+                return Ok(ApiResponseHelper.Success(query));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponseHelper.Failure<List<CategoryDto>>(ex.Message));
             }
         }
 
@@ -52,13 +53,13 @@ namespace Library.API.Controllers
                 var updated = await _service.UpdateCategoryAsync(dto, userId);
 
                 if (updated == null)
-                    return NotFound("Category not found.");
+                    return NotFound(ApiResponseHelper.Failure<UpdateCategoryDto>("Category not found."));
 
-                return Ok(updated);
+                return Ok(ApiResponseHelper.Success(updated));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<UpdateCategoryDto>(ex.Message));
             }
         }
 
@@ -70,17 +71,17 @@ namespace Library.API.Controllers
                 var success = await _service.ArchiveCategoryAsync(id, userId);
 
                 if (!success)
-                    return NotFound("Category not found.");
+                    return NotFound(ApiResponseHelper.Failure<CategoryDto>("Category not found."));
 
-                return Ok("Category archived successfully.");
+                return Ok(ApiResponseHelper.Success(new { Message = "Category archived successfully." }));
             }
             catch (ConflictException ex)
             {
-                return Conflict(ex.Message);
+                return Conflict(ApiResponseHelper.Failure<CategoryDto>(ex.Message));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<CategoryDto>(ex.Message));
             }
         }
     }

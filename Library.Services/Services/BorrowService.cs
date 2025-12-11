@@ -76,7 +76,7 @@ namespace Library.Services.Services
                 throw new ConflictException("Inventory copy is not available.");
 
             copy.IsAvailable = false;
-            await _inventoryRepo.UpdateAsync(copy);
+            await _inventoryRepo.UpdateAsync(copy, userId);
 
             var borrow = new BorrowRecord
             {
@@ -85,14 +85,9 @@ namespace Library.Services.Services
                 BorrowDate = DateOnly.FromDateTime(DateTime.Now),
                 DueDate = dto.DueDate ?? DateOnly.FromDateTime(DateTime.Now.AddDays(14)),
                 ReturnDate = null,
-
-                CreatedByUserId = userId,
-                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
-                LastModifiedByUserId = userId,
-                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now)
             };
 
-            await _borrowRepo.AddAsync(borrow);
+            await _borrowRepo.AddAsync(borrow, userId);
             await _borrowRepo.CommitAsync();
 
             return borrow;
@@ -112,10 +107,7 @@ namespace Library.Services.Services
                 throw new ConflictException($"Borrow record with id {borrowRecordId} has already been returned.");
 
             record.ReturnDate = DateOnly.FromDateTime(DateTime.Now);
-            record.LastModifiedByUserId = currentUserId;
-            record.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _borrowRepo.UpdateAsync(record);
+            await _borrowRepo.UpdateAsync(record, currentUserId);
             await _borrowRepo.CommitAsync();
 
             return await _inventoryService.ReturnCopyAsync(record.InventoryRecordId, currentUserId);

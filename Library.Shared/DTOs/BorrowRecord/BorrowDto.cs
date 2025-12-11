@@ -16,10 +16,5 @@ namespace Library.Shared.DTOs.BorrowRecord
 
         public int UserId { get; set; }
         public string? Username { get; set; }
-
-        public int? CreatedByUserId { get; set; }
-        public DateOnly? CreatedDate { get; set; }
-        public int? LastModifiedByUserId { get; set; }
-        public DateOnly? LastModifiedDate { get; set; }
     }
 }

@@ -7,7 +7,7 @@ namespace Library.Services.Interfaces
     {
         Task<bool> ReturnCopyAsync(int inventoryRecordId, int currentUserId);
         Task<InventoryRecord> CreateCopyAsync(int bookId, string copyCode, int createdByUserId);
-        Task<bool> RemoveCopyAsync(int inventoryRecordId, int performedByUserId);
+        Task<bool> ArchiveCopyAsync(int inventoryRecordId, int performedByUserId);
         IQueryable<InventoryRecord> ListCopiesForBookQuery(int bookId);
         IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId);
     }

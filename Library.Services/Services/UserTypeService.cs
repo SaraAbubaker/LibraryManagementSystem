@@ -25,11 +25,8 @@ namespace Library.Services.Services
             Validate.Positive(createdByUserId, nameof(createdByUserId));
 
             var userType = dto.Adapt<UserType>();
-            userType.CreatedByUserId = createdByUserId;
-            userType.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
-            userType.IsArchived = false;
 
-            await _userTypeRepo.AddAsync(userType);
+            await _userTypeRepo.AddAsync(userType, createdByUserId);
             await _userTypeRepo.CommitAsync();
 
             return userType.Adapt<UserTypeDto>();
@@ -72,10 +69,7 @@ namespace Library.Services.Services
             );
 
             userType.Role = dto.Role;
-            userType.LastModifiedByUserId = userId;
-            userType.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _userTypeRepo.UpdateAsync(userType);
+            await _userTypeRepo.UpdateAsync(userType, userId);
             await _userTypeRepo.CommitAsync();
 
             return userType.Adapt<UserTypeDto>();
@@ -91,11 +85,7 @@ namespace Library.Services.Services
                 id
             );
 
-            userType.IsArchived = true;
-            userType.ArchivedByUserId = archivedByUserId;
-            userType.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _userTypeRepo.UpdateAsync(userType);
+            await _userTypeRepo.ArchiveAsync(userType, archivedByUserId);
             await _userTypeRepo.CommitAsync();
 
             return true;

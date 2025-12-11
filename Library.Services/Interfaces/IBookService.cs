@@ -1,4 +1,5 @@
 ﻿using Library.Entities.Models;
+using Library.Shared.DTOs;
 using Library.Shared.DTOs.Book;
 using System.Collections.Generic;
 
@@ -12,6 +13,6 @@ namespace Library.Services.Interfaces
         IQueryable<BookListDto> GetBooksByCategoryQuery(int categoryId);
         Task<bool> UpdateBookAsync(UpdateBookDto dto, int currentUserId);
         Task<bool> ArchiveBookAsync(int bookId, int performedByUserId);
-        IQueryable<BookListDto> SearchBooksQuery(SearchBookParamsDto dto);
+        Task<PagedResult<BookListDto>> SearchBooksQuery(SearchBookParamsDto dto, SearchParamsDto searchDto);
     }
 }

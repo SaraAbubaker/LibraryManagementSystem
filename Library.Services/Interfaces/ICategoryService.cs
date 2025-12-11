@@ -8,6 +8,6 @@ namespace Library.Services.Interfaces
         Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto, int userId);
         IQueryable<CategoryDto> GetAllCategoriesQuery();
         Task<CategoryDto> UpdateCategoryAsync(UpdateCategoryDto dto, int userId);
-        Task<bool> ArchiveCategoryAsync(int id, int? performedByUserId = null);
+        Task<bool> ArchiveCategoryAsync(int id, int performedByUserId);
     }
 }

@@ -49,25 +49,13 @@ namespace Library.Services.Services
             user.Email = emailInput;
             user.UserTypeId = userType.Id;
             user.BorrowRecords = new List<BorrowRecord>();
-            user.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
-            user.IsArchived = false;
 
-            await _userRepo.AddAsync(user);
-
-            user.CreatedByUserId = user.Id;
-            user.LastModifiedByUserId = user.Id;
-            user.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _userRepo.UpdateAsync(user);
+            await _userRepo.AddAsync(user, userType.Id);
 
             var outDto = user.Adapt<UserDto>();
             outDto.UserTypeId = user.UserTypeId;
             outDto.UserRole = userType.Role;
             outDto.BorrowedBooksCount = 0;
-            outDto.CreatedByUserId = user.CreatedByUserId;
-            outDto.CreatedDate = user.CreatedDate;
-            outDto.LastModifiedByUserId = user.LastModifiedByUserId;
-            outDto.LastModifiedDate = user.LastModifiedDate;
 
             await _userRepo.CommitAsync();
             return outDto;
@@ -144,13 +132,7 @@ namespace Library.Services.Services
             if (user.BorrowRecords != null && user.BorrowRecords.Any(br => br.ReturnDate == null))
                 throw new InvalidOperationException("User has active borrowed books. Return them before deleting.");
 
-            user.IsArchived = true;
-            user.ArchivedByUserId = performedByUserId;
-            user.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
-            user.LastModifiedByUserId = performedByUserId;
-            user.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _userRepo.UpdateAsync(user);
+            await _userRepo.ArchiveAsync(user, performedByUserId);
 
             var dto = user.Adapt<UserDto>();
             dto.BorrowedBooksCount = user.BorrowRecords?.Count ?? 0;

@@ -43,13 +43,9 @@ namespace Library.Services.Services
                 Name = dto.Name,
                 Email = dto.Email,
                 IsArchived = false,
-                CreatedByUserId = userId,
-                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
-                LastModifiedByUserId = userId,
-                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now),
             };
 
-            await _authorRepo.AddAsync(author);
+            await _authorRepo.AddAsync(author, userId);
 
             var result = author.Adapt<AuthorListDto>();
 
@@ -115,10 +111,8 @@ namespace Library.Services.Services
 
             author.Name = name;
             author.Email = dto.Email?.Trim() ?? string.Empty;
-            author.LastModifiedByUserId = userId;
-            author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            await _authorRepo.UpdateAsync(author);
+            await _authorRepo.UpdateAsync(author, userId);
             await _authorRepo.CommitAsync();
 
             return true;
@@ -139,18 +133,13 @@ namespace Library.Services.Services
             foreach (var book in author.Books)
             {
                 book.AuthorId = -1; // Unknown
-                await _bookRepo.UpdateAsync(book);
+                await _bookRepo.UpdateAsync(book, performedByUserId);
             }
-
+            //do we add name & email in loop above?^
             author.Name = "Unknown";
             author.Email = string.Empty;
-            author.IsArchived = true;
-            author.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
-            author.ArchivedByUserId = performedByUserId;
-            author.LastModifiedByUserId = performedByUserId;
-            author.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
 
-            await _authorRepo.UpdateAsync(author);
+            await _authorRepo.ArchiveAsync(author, performedByUserId);
             await _authorRepo.CommitAsync();
 
             return true;

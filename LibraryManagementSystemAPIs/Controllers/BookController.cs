@@ -1,8 +1,11 @@
 ﻿using Library.Services.Interfaces;
+using Library.Shared.DTOs;
+using Library.Shared.DTOs.ApiResponses;
 using Library.Shared.DTOs.Book;
 using Library.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static Library.Shared.DTOs.SearchParamsDto;
 
 namespace Library.API.Controllers
 {
@@ -17,6 +20,24 @@ namespace Library.API.Controllers
             _service = service;
         }
 
+        [HttpPost]
+        public async Task<IActionResult> CreateBook([FromBody] CreateBookDto dto, [FromQuery] int userId)
+        {
+            try
+            {
+                var book = await _service.CreateBookAsync(dto, userId);
+                return CreatedAtAction(
+                    nameof(GetBookDetailsQuery),
+                    new { id = book.Id },
+                    ApiResponseHelper.Success(book)
+                );
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponseHelper.Failure<CreateBookDto>(ex.Message));
+            }
+        }
+
         [HttpGet("query/{id}")]
         public async Task<IActionResult> GetBookDetailsQuery(int id)
         {
@@ -24,13 +45,14 @@ namespace Library.API.Controllers
             {
                 var query = _service.GetBookDetailsQuery(id);
                 var book = await query.FirstOrDefaultAsync(); // Execute query
-                if (book == null) return NotFound();
+                if (book == null)
+                    return NotFound(ApiResponseHelper.Failure<BookListDto>("Book not found"));
 
-                return Ok(book);
+                return Ok(ApiResponseHelper.Success(book));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<BookListDto>(ex.Message));
             }
         }
 
@@ -40,11 +62,11 @@ namespace Library.API.Controllers
             try
             {
                 var query = _service.GetBooksByAuthorQuery(authorId);
-                return Ok(query);
+                return Ok(ApiResponseHelper.Success(query.ToList()));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<List<BookListDto>>(ex.Message));
             }
         }
 
@@ -54,42 +76,57 @@ namespace Library.API.Controllers
             try
             {
                 var query = _service.GetBooksByCategoryQuery(categoryId);
-                return Ok(query);
+                return Ok(ApiResponseHelper.Success(query.ToList()));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateBook([FromBody] CreateBookDto dto, [FromQuery] int userId)
-        {
-            try
-            {
-                var book = await _service.CreateBookAsync(dto, userId);
-                return CreatedAtAction(nameof(GetBookDetailsQuery), new { id = book.Id }, book); // Match service method
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<List<BookListDto>>(ex.Message));
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, UpdateBookDto dto, [FromQuery] int userId)
+        public async Task<IActionResult> UpdateBook(int id, UpdateBookDto dto, [FromQuery] int userId)
         {
             try
             {
-                if (id != dto.Id) return BadRequest("ID mismatch.");
+                if (id != dto.Id)
+                    return BadRequest(ApiResponseHelper.Failure<UpdateBookDto>("ID mismatch."));
 
                 var success = await _service.UpdateBookAsync(dto, userId);
-                if (!success) return NotFound();
+                if (!success)
+                    return NotFound(ApiResponseHelper.Failure<UpdateBookDto>("Book not found."));
+
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<UpdateBookDto>(ex.Message));
+            }
+        }
+
+        [HttpGet("query/search")]
+        public async Task<IActionResult> SearchBooksQuery(
+            [FromQuery] SearchBookParamsDto filters,
+            [FromQuery] int page = 1,
+            [FromQuery] BookSortBy sortBy = BookSortBy.Id,
+            [FromQuery] SortDirection sortDir = SortDirection.Asc)
+        {
+            try
+            {
+                var searchDto = new SearchParamsDto
+                {
+                    Page = page,
+                    SortBy = sortBy,
+                    SortDir = sortDir
+                };
+
+                var pagedResult = await _service.SearchBooksQuery(filters, searchDto);
+
+                return Ok(ApiResponseHelper.SuccessPaged(pagedResult));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponseHelper.Failure<object>(ex.Message));
             }
         }
 
@@ -99,34 +136,24 @@ namespace Library.API.Controllers
             try
             {
                 var success = await _service.ArchiveBookAsync(id, userId);
-                if (!success) return NotFound();
+                if (!success)
+                    return NotFound(ApiResponseHelper.Failure<BookListDto>("Book not found."));
 
                 var query = _service.GetBookDetailsQuery(id);
                 var book = await query.FirstOrDefaultAsync();
-                return Ok(book);
+
+                return Ok(ApiResponseHelper.Success(book));
             }
             catch (NotFoundException)
             {
-                return NotFound();
+                return NotFound(ApiResponseHelper.Failure<BookListDto>("Book not found."));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<BookListDto>(ex.Message));
             }
         }
 
-        [HttpGet("query/search")]
-        public IActionResult SearchBooksQuery([FromQuery] SearchBookParamsDto dto)
-        {
-            try
-            {
-                var query = _service.SearchBooksQuery(dto);
-                return Ok(query);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
+
     }
 }

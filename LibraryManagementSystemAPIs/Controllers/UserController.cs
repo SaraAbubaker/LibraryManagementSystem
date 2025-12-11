@@ -1,5 +1,6 @@
-﻿using Library.Shared.DTOs.User;
-using Library.Services.Interfaces;
+﻿using Library.Services.Interfaces;
+using Library.Shared.DTOs.ApiResponses;
+using Library.Shared.DTOs.User;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.API.Controllers
@@ -16,81 +17,84 @@ namespace Library.API.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterUserDto dto)
+        public async Task<IActionResult> RegisterUser(RegisterUserDto dto)
         {
             try
             {
                 var result = await _service.RegisterUserAsync(dto);
-                return Ok(result);
+                return Ok(ApiResponseHelper.Success(result));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<RegisterUserDto>(ex.Message));
             }
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto dto)
+        public async Task<IActionResult> LoginUser(LoginDto dto)
         {
             try
             {
                 var result = await _service.LoginUserAsync(dto);
-                return Ok(result);
+                return Ok(ApiResponseHelper.Success(result));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<LoginDto>(ex.Message));
             }
         }
 
         [HttpGet("query")]
-        public IActionResult GetAllQuery()
+        public IActionResult GetAllUsersQuery()
         {
             try
             {
-                var query = _service.GetAllUsersQuery();
-                return Ok(query);
+                var query = _service.GetAllUsersQuery().ToList();
+                return Ok(ApiResponseHelper.Success(query));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<List<UserDto>>(ex.Message));
             }
         }
 
         [HttpGet("query/{id}")]
-        public IActionResult GetByIdQuery(int id)
+        public IActionResult GetUserByIdQuery(int id)
         {
             try
             {
                 var query = _service.GetUserByIdQuery(id);
-                return Ok(query);
+                var user = query.FirstOrDefault();
+                if (user == null)
+                    return NotFound(ApiResponseHelper.Failure<UserDto>("User not found"));
+
+                return Ok(ApiResponseHelper.Success(user));
             }
-            catch (KeyNotFoundException)
+            catch (Exception ex)
             {
-                return NotFound("User not found.");
+                return BadRequest(ApiResponseHelper.Failure<UserDto>(ex.Message));
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Archive(int id, [FromQuery] int performedByUserId)
+        public async Task<IActionResult> ArchiveUser(int id, [FromQuery] int performedByUserId)
         {
             try
             {
                 var result = await _service.ArchiveUserAsync(id, performedByUserId);
-                return Ok(result);
+                return Ok(ApiResponseHelper.Success(result));
             }
             catch (KeyNotFoundException)
             {
-                return NotFound("User not found.");
+                return NotFound(ApiResponseHelper.Failure<object>("User not found"));
             }
             catch (InvalidOperationException ex)
             {
-                //already archived or has active borrowed books
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<object>(ex.Message));
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ApiResponseHelper.Failure<object>(ex.Message));
             }
         }
     }

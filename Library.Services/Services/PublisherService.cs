@@ -27,15 +27,10 @@ namespace Library.Services.Services
 
             var publisher = new Publisher
             {
-                Name = dto.Name,
-                CreatedByUserId = createdByUserId,
-                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
-                LastModifiedByUserId = createdByUserId,
-                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now),
-                IsArchived = false
+                Name = dto.Name
             };
 
-            await _publisherRepo.AddAsync(publisher);
+            await _publisherRepo.AddAsync(publisher, createdByUserId);
 
             var publisherDto = publisher.Adapt<PublisherDto>();
             publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
@@ -88,10 +83,7 @@ namespace Library.Services.Services
             );
 
             publisher.Name = dto.Name;
-            publisher.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-            publisher.LastModifiedByUserId = userId;
-
-            await _publisherRepo.UpdateAsync(publisher);
+            await _publisherRepo.UpdateAsync(publisher, userId);
 
             var publisherDto = publisher.Adapt<PublisherDto>();
             publisherDto.InventoryCount = publisher.InventoryRecords?.Count ?? 0;
@@ -113,13 +105,7 @@ namespace Library.Services.Services
                 id
             );
 
-            publisher.IsArchived = true;
-            publisher.ArchivedByUserId = archivedByUserId;
-            publisher.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
-            publisher.LastModifiedByUserId = archivedByUserId;
-            publisher.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _publisherRepo.UpdateAsync(publisher);
+            await _publisherRepo.ArchiveAsync(publisher, archivedByUserId);
 
             return true;
         }

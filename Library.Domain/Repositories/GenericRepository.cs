@@ -29,34 +29,42 @@ namespace Library.Domain.Repositories
             return query;
         }
 
-
         public IQueryable<T> GetById(int id)
         {
             return _dbSet.Where(e => EF.Property<int>(e, "Id") == id);
         }
 
-        public async Task AddAsync(T entity)
+        public async Task AddAsync(T entity, int currentUserId)
         {
+            entity.CreatedByUserId = currentUserId;
+            entity.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
+            entity.LastModifiedByUserId = currentUserId;
+            entity.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
+            entity.IsArchived = false;
+
             await _dbSet.AddAsync(entity);
         }
 
-        public async Task UpdateAsync(T entity)
+        public async Task UpdateAsync(T entity, int currentUserId)
         {
+            entity.LastModifiedByUserId = currentUserId;
+            entity.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
+
             _dbSet.Update(entity);
         }
 
-        public async Task ArchiveAsync(T entity)
+        public async Task ArchiveAsync(T entity, int currentUserId)
         {
-            dynamic e = entity;
-            try
-            {
-                e.IsArchived = true;
-                _dbSet.Update(e);
-            }
-            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
-            {
-                throw new Exception($"Entity of type {typeof(T).Name} does not have an IsArchived property.");
-            }
+            if (entity == null) throw new ArgumentNullException(nameof(entity));
+
+            entity.IsArchived = true;
+            entity.ArchivedByUserId = currentUserId;
+            entity.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
+            entity.LastModifiedByUserId = currentUserId;
+            entity.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
+
+
+            _dbSet.Update(entity);
         }
 
         public async Task CommitAsync()

@@ -5,9 +5,9 @@ namespace Library.Domain.Repositories
     {
         IQueryable<T> GetAll();
         IQueryable<T> GetById(int id);
-        Task AddAsync(T entity);
-        Task UpdateAsync(T entity);
-        Task ArchiveAsync(T entity);
+        Task AddAsync(T entity, int currentUserId);
+        Task UpdateAsync(T entity, int currentUserId);
+        Task ArchiveAsync(T entity, int currentUserId);
         Task CommitAsync();
     }
 }

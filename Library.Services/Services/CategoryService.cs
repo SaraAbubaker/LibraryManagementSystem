@@ -31,13 +31,7 @@ namespace Library.Services.Services
 
             var category = dto.Adapt<Category>();
 
-            category.CreatedByUserId = userId;
-            category.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
-            category.LastModifiedByUserId = userId;
-            category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-            category.IsArchived = false;
-
-            await _categoryRepo.AddAsync(category);
+            await _categoryRepo.AddAsync(category, userId);
             await _categoryRepo.CommitAsync();
 
             return category.Adapt<CategoryDto>();
@@ -61,17 +55,14 @@ namespace Library.Services.Services
             );
 
             category.Name = dto.Name;
-            category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-            category.LastModifiedByUserId = userId;
-
-            await _categoryRepo.UpdateAsync(category);
+            await _categoryRepo.UpdateAsync(category, userId);
             await _categoryRepo.CommitAsync();
 
             return category.Adapt<CategoryDto>();
         }
 
         //Archives category & Moves books out of it
-        public async Task<bool> ArchiveCategoryAsync(int id, int? performedByUserId = null)
+        public async Task<bool> ArchiveCategoryAsync(int id, int performedByUserId)
         {
             Validate.Positive(id, nameof(id));
 
@@ -91,16 +82,10 @@ namespace Library.Services.Services
             {
                 book.CategoryId = -1; //Unknown
                 book.Category = unknownCategory;
-                await _bookRepo.UpdateAsync(book);
+                await _bookRepo.UpdateAsync(book, performedByUserId);
             }
 
-            category.IsArchived = true;
-            category.ArchivedByUserId = performedByUserId;
-            category.ArchivedDate = DateOnly.FromDateTime(DateTime.Now);
-            category.LastModifiedByUserId = performedByUserId;
-            category.LastModifiedDate = DateOnly.FromDateTime(DateTime.Now);
-
-            await _categoryRepo.UpdateAsync(category);
+            await _categoryRepo.ArchiveAsync(category, performedByUserId);
             await _categoryRepo.CommitAsync();
 
             return true;
