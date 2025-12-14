@@ -11,7 +11,7 @@ namespace Library.Shared.DTOs.BorrowRecord
         public bool IsOverdue { get; set; }
         public int OverdueDays { get; set; }
 
-        public int InventoryRecordId { get; set; }
+        public int BookdId { get; set; }
         public string? CopyCode { get; set; }
 
         public int UserId { get; set; }

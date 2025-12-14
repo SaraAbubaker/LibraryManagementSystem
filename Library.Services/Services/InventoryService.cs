@@ -1,7 +1,8 @@
 ﻿using Library.Domain.Repositories;
-using Library.Shared.Helpers;
 using Library.Entities.Models;
 using Library.Services.Interfaces;
+using Library.Shared.Exceptions;
+using Library.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Library.Services.Services
@@ -21,19 +22,40 @@ namespace Library.Services.Services
             _bookRepo = bookRepo;
             _bookService = bookService;
         }
-        
+
         //Create, Remove, Read
-        public async Task<InventoryRecord> CreateCopyAsync(int bookId, string copyCode, int createdByUserId)
+        public async Task<InventoryRecord> CreateCopyAsync(int bookId, int createdByUserId)
         {
             Validate.Positive(bookId, nameof(bookId));
-            Validate.NotEmpty(copyCode, nameof(copyCode));
             Validate.Positive(createdByUserId, nameof(createdByUserId));
-            
+
+            var book = Validate.Exists(
+                await _bookRepo
+                    .GetById(bookId)
+                    .Include(b => b.InventoryRecords)
+                    .FirstOrDefaultAsync(),
+                bookId
+            );
+
+            string prefix = CopyCodeGeneratorHelper.GenerateBookPrefix(book.Title);
+
+            int nextNumber = book.InventoryRecords.Any()
+                ? book.InventoryRecords.Count + 1
+                : 1;
+
+            string copyCode = $"{prefix}-{nextNumber:00}";
+
             var record = new InventoryRecord
             {
                 BookId = bookId,
                 CopyCode = copyCode,
-                IsAvailable = true
+                IsAvailable = true,
+                PublisherId = book.PublisherId,
+                CreatedByUserId = createdByUserId,
+                CreatedDate = DateOnly.FromDateTime(DateTime.Now),
+                LastModifiedByUserId = createdByUserId,
+                LastModifiedDate = DateOnly.FromDateTime(DateTime.Now),
+                IsArchived = false
             };
 
             await _inventoryRepo.AddAsync(record, createdByUserId);

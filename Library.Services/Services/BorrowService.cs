@@ -28,6 +28,8 @@ namespace Library.Services.Services
         //ListAll
         public IQueryable<BorrowListDto> GetBorrowDetailsQuery()
         {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
             return _borrowRepo.GetAll()
                 .AsNoTracking()
                 .Include(b => b.InventoryRecord)
@@ -40,7 +42,7 @@ namespace Library.Services.Services
                     ReturnDate = b.ReturnDate,
                     CopyCode = b.InventoryRecord != null ? b.InventoryRecord.CopyCode : null,
                     Username = b.User != null ? b.User.Username : null,
-                    IsOverdue = IsBorrowOverdue(b),
+                    IsOverdue = b.ReturnDate == null && b.DueDate < today,
                     OverdueDays = CalculateOverdueDays(b)
                 });
         }
@@ -68,19 +70,19 @@ namespace Library.Services.Services
             Validate.Positive(userId, nameof(userId));
 
             var copy = Validate.Exists(
-                await _inventoryRepo.GetById(dto.InventoryRecordId).FirstOrDefaultAsync(),
-                dto.InventoryRecordId
+                await _inventoryRepo
+                    .GetAll() // or a GetByBookId method
+                    .Where(c => c.BookId == dto.BookId && c.IsAvailable)
+                    .FirstOrDefaultAsync(),
+                dto.BookId
             );
-
-            if (!copy.IsAvailable)
-                throw new ConflictException("Inventory copy is not available.");
 
             copy.IsAvailable = false;
             await _inventoryRepo.UpdateAsync(copy, userId);
 
             var borrow = new BorrowRecord
             {
-                InventoryRecordId = dto.InventoryRecordId,
+                InventoryRecordId = copy.Id,
                 UserId = userId,
                 BorrowDate = DateOnly.FromDateTime(DateTime.Now),
                 DueDate = dto.DueDate ?? DateOnly.FromDateTime(DateTime.Now.AddDays(14)),

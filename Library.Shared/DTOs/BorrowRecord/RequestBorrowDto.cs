@@ -8,7 +8,7 @@ namespace Library.Shared.DTOs.BorrowRecord
     {
         [Required]
         [Positive]
-        public int InventoryRecordId { get; set; }
+        public int BookId { get; set; }
 
         //User picks 
         public DateOnly? DueDate { get; set; }

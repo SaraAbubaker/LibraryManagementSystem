@@ -16,11 +16,11 @@ namespace Library.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateCopy(int bookId, string copyCode, [FromQuery] int userId)
+        public async Task<IActionResult> CreateCopy(int bookId, [FromQuery] int userId)
         {
             try
             {
-                var record = await _service.CreateCopyAsync(bookId, copyCode, userId);
+                var record = await _service.CreateCopyAsync(bookId, userId);
                 return Ok(ApiResponseHelper.Success(record));
             }
             catch (Exception ex)

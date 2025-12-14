@@ -1,6 +1,5 @@
 ﻿using Library.Domain.Data;
 using Library.Entities.Base;
-using Library.Entities.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Library.Domain.Repositories

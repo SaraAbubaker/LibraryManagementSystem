@@ -1,6 +1,5 @@
 ﻿
 using Library.Entities.Base;
-
 using System.ComponentModel.DataAnnotations;
 
 namespace Library.Entities.Models

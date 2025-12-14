@@ -6,7 +6,6 @@ using Library.Shared.Exceptions;
 using Library.Shared.Helpers;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace Library.Services.Services
 {

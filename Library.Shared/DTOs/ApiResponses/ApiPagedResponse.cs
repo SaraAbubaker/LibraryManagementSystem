@@ -1,5 +1,4 @@
 ﻿
-
 namespace Library.Shared.DTOs.ApiResponses
 {
     public class ApiPagedResponse<T>

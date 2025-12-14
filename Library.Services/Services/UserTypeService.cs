@@ -2,7 +2,6 @@
 using Library.Entities.Models;
 using Library.Services.Interfaces;
 using Library.Shared.DTOs.UserType;
-using Library.Shared.Exceptions;
 using Library.Shared.Helpers;
 using Mapster;
 using Microsoft.EntityFrameworkCore;

@@ -3,7 +3,6 @@ using Library.Entities.Models;
 using Library.Services.Interfaces;
 using Library.Shared.DTOs;
 using Library.Shared.DTOs.Book;
-using Library.Shared.Exceptions;
 using Library.Shared.Helpers;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
