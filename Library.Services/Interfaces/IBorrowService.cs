@@ -8,7 +8,7 @@ namespace Library.Services.Interfaces
         IQueryable<BorrowListDto> GetBorrowDetailsQuery();
         Task<bool> HasAvailableCopyAsync(int bookId);
         IQueryable<InventoryRecord> GetAvailableCopiesQuery(int bookId);
-        Task<BorrowRecord> BorrowBookAsync(RequestBorrowDto dto, int userId);
+        Task<BorrowResponseDto> BorrowBookAsync(RequestBorrowDto dto, int userId);
         Task<bool> ReturnBookAsync(int borrowRecordId, int currentUserId);
         IQueryable<BorrowRecord> GetOverdueRecordsQuery();
         bool IsBorrowOverdue(BorrowRecord record);

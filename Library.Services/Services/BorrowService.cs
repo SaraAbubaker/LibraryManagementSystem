@@ -43,7 +43,13 @@ namespace Library.Services.Services
                     CopyCode = b.InventoryRecord != null ? b.InventoryRecord.CopyCode : null,
                     Username = b.User != null ? b.User.Username : null,
                     IsOverdue = b.ReturnDate == null && b.DueDate < today,
-                    OverdueDays = CalculateOverdueDays(b)
+                    OverdueDays = EF.Functions.DateDiffDay( 
+                        b.DueDate.ToDateTime(TimeOnly.MinValue),
+                        (b.ReturnDate ?? today).ToDateTime(TimeOnly.MinValue)
+                        ) > 0 ? EF.Functions.DateDiffDay(
+                            b.DueDate.ToDateTime(TimeOnly.MinValue),
+                            (b.ReturnDate ?? today).ToDateTime(TimeOnly.MinValue)
+                            ) : 0
                 });
         }
 
@@ -64,18 +70,17 @@ namespace Library.Services.Services
         }
 
         //Borrow & Return
-        public async Task<BorrowRecord> BorrowBookAsync(RequestBorrowDto dto, int userId)
+        public async Task<BorrowResponseDto> BorrowBookAsync(RequestBorrowDto dto, int userId)
         {
             Validate.ValidateModel(dto);
             Validate.Positive(userId, nameof(userId));
 
-            var copy = Validate.Exists(
-                await _inventoryRepo
-                    .GetAll() // or a GetByBookId method
-                    .Where(c => c.BookId == dto.BookId && c.IsAvailable)
-                    .FirstOrDefaultAsync(),
-                dto.BookId
-            );
+            var copy = await _inventoryService
+                .GetAvailableCopiesQuery(dto.BookId)
+                .FirstOrDefaultAsync();
+
+            if (copy == null)
+                throw new NotFoundException($"No available copies for BookId {dto.BookId}");
 
             copy.IsAvailable = false;
             await _inventoryRepo.UpdateAsync(copy, userId);
@@ -92,7 +97,15 @@ namespace Library.Services.Services
             await _borrowRepo.AddAsync(borrow, userId);
             await _borrowRepo.CommitAsync();
 
-            return borrow;
+            var response = new BorrowResponseDto
+            {
+                BorrowRecordId = borrow.Id,
+                InventoryRecordId = borrow.InventoryRecordId,
+                BorrowDate = borrow.BorrowDate,
+                DueDate = borrow.DueDate
+            };
+
+            return response;
         }
 
         public async Task<bool> ReturnBookAsync(int borrowRecordId, int currentUserId)
@@ -114,6 +127,7 @@ namespace Library.Services.Services
 
             return await _inventoryService.ReturnCopyAsync(record.InventoryRecordId, currentUserId);
         }
+
 
 
         //Overdue Logic
