@@ -5,7 +5,8 @@ namespace Library.Infrastructure.Logging.Interfaces
 {
     public interface IMessageLoggerService
     {
-        Task LogRequestAsync(MessageLog log);
-        Task LogResponseAsync(Guid guid, string response);
+        Task LogMessageAsync(MessageLog log);
+        Task<MessageLog?> GetMessageLogAsync(Guid guid);
+        Task<List<MessageLog>> GetAllMessageLogsAsync();
     }
 }

@@ -1,0 +1,14 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Library.Infrastructure.Logging.Models
+{
+    public enum LogLevel
+    {
+        Info,       // General informational messages,           ex: "Scheduled job completed"
+        Request,    // Logs for incoming requests or actions,    ex: "User requested book X"
+        Warning,    // Unexpected situations that aren’t errors, ex: "Borrow limit exceeded"
+        Exception   // Actual errors or exceptions,              ex: "Null reference exception"
+    }
+}
