@@ -1,5 +1,4 @@
-﻿
-using Library.Infrastructure.Logging.Interfaces;
+﻿using Library.Infrastructure.Logging.Interfaces;
 using Library.Infrastructure.Logging.Models;
 using Library.Infrastructure.Mongo;
 
@@ -7,21 +6,28 @@ namespace Library.Infrastructure.Logging.Services
 {
     public class MessageLoggerService : IMessageLoggerService
     {
-        //private readonly MongoRepository<MessageLog> _repo;
+        private readonly MongoRepository<MessageLog> _repo;
 
         public MessageLoggerService(MongoContext context)
         {
-            //_repo = new MongoRepository<MessageLog>(context, "MessageLogs");
+            _repo = new MongoRepository<MessageLog>(context, "MessageLogs");
         }
 
-        public async Task LogRequestAsync(MessageLog log)
+        public async Task LogMessageAsync(MessageLog log)
         {
-            //await _repo.InsertAsync(log);
+            log.Guid = log.Guid == Guid.Empty ? Guid.NewGuid() : log.Guid;
+            log.CreatedAt = DateTime.UtcNow;
+            await _repo.InsertAsync(log);
         }
 
-        public async Task LogResponseAsync(Guid guid, string response)
+        public async Task<MessageLog?> GetMessageLogAsync(Guid guid)
         {
-            // update logic
+            return await _repo.FindOneAsync(x => x.Guid == guid);
+        }
+
+        public async Task<List<MessageLog>> GetAllMessageLogsAsync()
+        {
+            return await _repo.FindAsync(_ => true); // fetch all
         }
     }
 }
