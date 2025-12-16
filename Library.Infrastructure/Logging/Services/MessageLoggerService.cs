@@ -1,7 +1,9 @@
-﻿using Library.Infrastructure.Logging.Interfaces;
+﻿using LogLevel = Library.Infrastructure.Logging.Models.LogLevel;
+using Library.Infrastructure.Logging.Interfaces;
 using Library.Infrastructure.Logging.Models;
 using Library.Infrastructure.Mongo;
 using Library.Shared.Helpers;
+
 
 namespace Library.Infrastructure.Logging.Services
 {
@@ -14,13 +16,23 @@ namespace Library.Infrastructure.Logging.Services
             _repo = new MongoRepository<MessageLog>(context, "MessageLogs");
         }
 
-        public async Task LogMessageAsync(MessageLog log)
+        public async Task LogMessageAsync(
+            string request,
+            string? response = null,
+            LogLevel level = LogLevel.Info,
+            string? serviceName = null)
         {
-            log.Guid = Guid.NewGuid();
-            log.CreatedAt = DateTime.Now;
+            var log = new MessageLog
+            {
+                Guid = Guid.NewGuid(),
+                CreatedAt = DateTime.Now,
+                Request = request,
+                Response = response,
+                Level = level,
+                ServiceName = serviceName ?? "UnknownService"
+            };
 
             Validate.ValidateModel(log);
-
             await _repo.InsertAsync(log);
         }
 
