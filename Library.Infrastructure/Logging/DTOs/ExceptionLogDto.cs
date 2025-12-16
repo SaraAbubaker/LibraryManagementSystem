@@ -14,6 +14,7 @@ namespace Library.Infrastructure.Logging.DTOs
         public required string ExceptionMessage { get; set; }
 
         [Required(ErrorMessage = "Stack trace is required.")]
+        [StringLength(4000, ErrorMessage = "Stack trace cannot exceed 4000 characters.")]
         public required string StackTrace { get; set; }
 
         [Required(ErrorMessage = "Service name is required.")]

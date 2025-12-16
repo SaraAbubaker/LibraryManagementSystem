@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Library.Domain\Library.Domain.csproj" />
+    <ProjectReference Include="..\Library.Infrastructure\Library.Infrastructure.csproj" />
     <ProjectReference Include="..\Library.Services\Library.Services.csproj" />
     <ProjectReference Include="..\Library.Shared\Library.Shared.csproj" />
   </ItemGroup>

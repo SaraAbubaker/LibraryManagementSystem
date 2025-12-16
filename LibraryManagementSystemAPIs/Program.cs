@@ -1,10 +1,15 @@
-using Library.Domain.Data;
+
+using Library.Infrastructure.Logging.Interfaces;
+using Library.Infrastructure.Logging.Services;
+using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
+using Library.Infrastructure.Mongo;
 using Library.Domain.Repositories;
 using Library.Services.Interfaces;
 using Library.Services.Services;
-using Microsoft.EntityFrameworkCore;
+using Library.Domain.Data;
 using Microsoft.OpenApi;
-using System.Text.Json.Serialization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +44,21 @@ builder.Services.AddScoped<IPublisherService, PublisherService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserTypeService, UserTypeService>();
 
+// MongoContext
+builder.Services.AddSingleton(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    string mongoConnection = configuration["MongoSettings:ConnectionString"]
+        ?? throw new InvalidOperationException("Mongo connection string is missing in configuration.");
+    string mongoDbName = configuration["MongoSettings:DatabaseName"]
+        ?? throw new InvalidOperationException("Mongo database name is missing in configuration.");
+
+    return new MongoContext(mongoConnection, mongoDbName);
+});
+
+// Logging services
+builder.Services.AddSingleton<IExceptionLoggerService, ExceptionLoggerService>();
+builder.Services.AddSingleton<IMessageLoggerService, MessageLoggerService>();
 
 var app = builder.Build();
 
@@ -53,4 +73,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+var mongoContext = app.Services.GetRequiredService<MongoContext>();
+//mongoContext.CreateCollectionsIfNotExist(); //temporary, one-time creation of collections
+
 app.Run();

@@ -1,4 +1,5 @@
 ﻿
+using System.Linq.Expressions;
 using MongoDB.Driver;
 
 namespace Library.Infrastructure.Mongo
@@ -25,15 +26,15 @@ namespace Library.Infrastructure.Mongo
         }
 
         //Find
-        public async Task<List<T>> FindAsync(FilterDefinition<T> filter)
+        public async Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate)
         {
-            return await _collection.Find(filter).ToListAsync();
+            return await _collection.Find(predicate).ToListAsync();
         }
 
         //Find One
-        public async Task<T> FindOneAsync(FilterDefinition<T> filter)
+        public async Task<T?> FindOneAsync(Expression<Func<T, bool>> predicate)
         {
-            return await _collection.Find(filter).FirstOrDefaultAsync();
+            return await _collection.Find(predicate).FirstOrDefaultAsync();
         }
 
         //Delete

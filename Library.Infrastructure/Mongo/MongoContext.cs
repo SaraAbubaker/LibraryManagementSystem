@@ -7,12 +7,22 @@ namespace Library.Infrastructure.Mongo
     {
         public IMongoDatabase Database { get; }
 
-        public MongoContext(string connectionString)
+        public MongoContext(string connectionString, string databaseName)
         {
             var client = new MongoClient(connectionString);
+            Database = client.GetDatabase(databaseName);
+        }
 
-            //Connect to the "LibraryLogs" database
-            Database = client.GetDatabase("LibraryLogs");
+        //Creating Collections
+        public void CreateCollectionsIfNotExist()
+        {
+            var existingCollections = Database.ListCollectionNames().ToList();
+
+            if (!existingCollections.Contains("ExceptionLogs"))
+                Database.CreateCollection("ExceptionLogs");
+
+            if (!existingCollections.Contains("MessageLogs"))
+                Database.CreateCollection("MessageLogs");
         }
     }
 }

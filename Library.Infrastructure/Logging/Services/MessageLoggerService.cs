@@ -1,6 +1,7 @@
 ﻿using Library.Infrastructure.Logging.Interfaces;
 using Library.Infrastructure.Logging.Models;
 using Library.Infrastructure.Mongo;
+using Library.Shared.Helpers;
 
 namespace Library.Infrastructure.Logging.Services
 {
@@ -15,8 +16,11 @@ namespace Library.Infrastructure.Logging.Services
 
         public async Task LogMessageAsync(MessageLog log)
         {
-            log.Guid = log.Guid == Guid.Empty ? Guid.NewGuid() : log.Guid;
-            log.CreatedAt = DateTime.UtcNow;
+            log.Guid = Guid.NewGuid();
+            log.CreatedAt = DateTime.Now;
+
+            Validate.ValidateModel(log);
+
             await _repo.InsertAsync(log);
         }
 
@@ -27,7 +31,7 @@ namespace Library.Infrastructure.Logging.Services
 
         public async Task<List<MessageLog>> GetAllMessageLogsAsync()
         {
-            return await _repo.FindAsync(_ => true); // fetch all
+            return await _repo.FindAsync(_ => true);
         }
     }
 }

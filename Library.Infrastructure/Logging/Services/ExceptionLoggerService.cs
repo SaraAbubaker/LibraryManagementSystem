@@ -1,6 +1,7 @@
 ﻿using Library.Infrastructure.Logging.Interfaces;
 using Library.Infrastructure.Logging.Models;
 using Library.Infrastructure.Mongo;
+using Library.Shared.Helpers;
 
 namespace Library.Infrastructure.Logging.Services
 {
@@ -13,12 +14,21 @@ namespace Library.Infrastructure.Logging.Services
             _repo = new MongoRepository<ExceptionLog>(context, "ExceptionLogs");
         }
 
-        public async Task LogExceptionAsync(ExceptionLog exception)
+        public async Task LogExceptionAsync(Exception ex, string serviceName)
         {
-            exception.Guid = exception.Guid == Guid.Empty ? Guid.NewGuid() : exception.Guid;
-            exception.CreatedAt = DateTime.UtcNow;
-            exception.Level = LogLevel.Exception; // always Exception
-            await _repo.InsertAsync(exception);
+            var log = new ExceptionLog
+            {
+                Guid = Guid.NewGuid(),
+                CreatedAt = DateTime.Now,
+                Level = LogLevel.Exception,
+                ServiceName = serviceName,
+                ExceptionMessage = ex.Message,
+                StackTrace = ex.StackTrace ?? string.Empty
+            };
+
+            Validate.ValidateModel(log);
+
+            await _repo.InsertAsync(log);
         }
 
         public async Task<ExceptionLog?> GetExceptionLogAsync(Guid guid)
@@ -28,7 +38,7 @@ namespace Library.Infrastructure.Logging.Services
 
         public async Task<List<ExceptionLog>> GetAllExceptionLogsAsync()
         {
-            return await _repo.FindAsync(_ => true); // fetch all
+            return await _repo.FindAsync(_ => true);
         }
     }
 }
